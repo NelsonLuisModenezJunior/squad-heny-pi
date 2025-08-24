@@ -1,0 +1,8 @@
+node_modules/
+*.log
+dist/
+.env
+.pnpm-store/
+apps/web/node_modules/
+apps/web/.pnpm-store/
+vendor/
