@@ -6,7 +6,7 @@
 
 2 - Abra ela no VsCode 😂
 
-3 - CTRL + J no seu terminal 😘
+3 - Abra o terminal: CTRL + J 😘
 
 4 - Clone o projeto usando o Git clone https://github.com/NelsonLuisModenezJunior/squad-heny-pi.git
 
