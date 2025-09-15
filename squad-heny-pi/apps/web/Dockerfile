@@ -8,7 +8,11 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copiar apenas package.json e lockfile para cache
-COPY package.json pnpm-lock.yaml ./
+COPY [pnpm-lock.yaml](http://_vscodecontentref_/4) [pnpm-lock.yaml](http://_vscodecontentref_/5)
+COPY ../../pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY [package.json](http://_vscodecontentref_/6) ./
+
+ENV CI=true
 
 # Instalar dependências
 RUN pnpm install --frozen-lockfile
