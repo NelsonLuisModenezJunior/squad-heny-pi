@@ -31,7 +31,25 @@ export default function HeroSection() {
   return (
     <>
       <HeroHeader />
-      <main className="overflow-hidden">
+      <main className="relative overflow-hidden min-h-screen">
+        {/* Imagem de fundo cobrindo toda a tela */}
+        <div className="absolute inset-0 -z-20 h-[120vh]">
+          <Image
+            src="/Floresta.jpg"
+            alt="background"
+            fill
+            priority
+            className="object-cover"
+            quality={100}
+          />
+          {/* Overlay escuro para melhorar a legibilidade do texto */}
+          <div className="absolute inset-0 bg-black/40 dark:bg-black/60" />
+          {/* Efeito de névoa/gradiente na parte inferior - similar ao original */}
+          <div className="mask-b-from-5 absolute inset-0" />
+          <div className="absolute inset-x-0 bottom-0 h-[3.5%] bg-gradient-to-t from-background via-background/80 to-transparent" />
+        </div>
+
+        {/* Gradientes decorativos (opcional - pode remover se preferir) */}
         <div
           aria-hidden
           className="absolute inset-0 isolate hidden opacity-65 contain-strict lg:block"
@@ -40,62 +58,22 @@ export default function HeroSection() {
           <div className="h-320 absolute left-0 top-0 w-60 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
           <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-60 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
         </div>
-        <section>
-          <div className="relative pt-24 md:pt-36">
-            <AnimatedGroup
-              variants={{
-                container: {
-                  visible: {
-                    transition: {
-                      delayChildren: 1,
-                    },
-                  },
-                },
-                item: {
-                  hidden: {
-                    opacity: 0,
-                    y: 20,
-                  },
-                  visible: {
-                    opacity: 1,
-                    y: 0,
-                    transition: {
-                      type: "spring",
-                      bounce: 0.3,
-                      duration: 2,
-                    },
-                  },
-                },
-              }}
-              className="mask-b-from-35% mask-b-to-90% absolute inset-0 top-56 -z-20 lg:top-32"
-            >
-              <Image
-                src="https://ik.imagekit.io/lrigu76hy/tailark/night-background.jpg?updatedAt=1745733451120"
-                alt="background"
-                className="hidden size-full dark:block"
-                width="3276"
-                height="4095"
-              />
-            </AnimatedGroup>
 
-            <div
-              aria-hidden
-              className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--color-background)_75%)]"
-            />
-
+        <section className="relative z-10">
+          <div className="relative pt-24 md:pt-36 pb-20">
             <div className="mx-auto max-w-7xl px-6">
               <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
                 <AnimatedGroup variants={transitionVariants}>
                   <Link
                     href="#link"
-                    className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
+                    className="hover:bg-background/90 dark:hover:border-t-border bg-white/90 dark:bg-black/50 backdrop-blur-md group mx-auto flex w-fit items-center gap-4 rounded-full border border-white/20 p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-white/10 dark:shadow-zinc-950"
                   >
-                    <span className="text-foreground text-sm">
+                    <span className="text-foreground dark:text-white text-sm">
                       Quer saber mais sobre o projeto e nosso propósito
                     </span>
-                    <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
+                    <span className="dark:border-background block h-4 w-0.5 border-l bg-zinc-700 dark:bg-zinc-300"></span>
 
-                    <div className="bg-background group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
+                    <div className="bg-background/90 group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
                       <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
                         <span className="flex size-6">
                           <ArrowRight className="m-auto size-3" />
@@ -112,7 +90,7 @@ export default function HeroSection() {
                   preset="fade-in-blur"
                   speedSegment={0.3}
                   as="h1"
-                  className="mx-auto mt-8 max-w-4xl text-balance text-5xl max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem]"
+                  className="mx-auto mt-8 max-w-4xl text-balance text-5xl max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem] text-white drop-shadow-2xl"
                 >
                   H[ENY]
                 </TextEffect>
@@ -122,7 +100,7 @@ export default function HeroSection() {
                   speedSegment={0.3}
                   delay={0.5}
                   as="p"
-                  className="mx-auto mt-8 max-w-2xl text-balance text-lg"
+                  className="mx-auto mt-8 max-w-2xl text-balance text-lg text-white/95 drop-shadow-lg"
                 >
                   Gestão elétrica moderna, customizada e simplificada para sua
                   vida.
@@ -144,12 +122,12 @@ export default function HeroSection() {
                 >
                   <div
                     key={1}
-                    className="bg-foreground/10 rounded-[calc(var(--radius-xl)+0.125rem)] border p-0.5"
+                    className="bg-white/10 backdrop-blur-sm rounded-[calc(var(--radius-xl)+0.125rem)] border border-white/20 p-0.5"
                   >
                     <Button
                       asChild
                       size="lg"
-                      className="rounded-xl px-5 text-base"
+                      className="rounded-xl px-5 text-base bg-white text-black hover:bg-white/90"
                     >
                       <Link href="#link">
                         <span className="text-nowrap">Ir para Relatórios</span>
@@ -161,7 +139,7 @@ export default function HeroSection() {
                     asChild
                     size="lg"
                     variant="ghost"
-                    className="h-10.5 rounded-xl px-5"
+                    className="h-10.5 rounded-xl px-5 text-white hover:bg-white/10 backdrop-blur-sm"
                   >
                     <Link href="#link">
                       <span className="text-nowrap">Fazer uma comparação</span>
@@ -171,127 +149,49 @@ export default function HeroSection() {
               </div>
             </div>
 
-            <AnimatedGroup
-              variants={{
-                container: {
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.05,
-                      delayChildren: 0.75,
+            {/* Seção adicional opcional - você pode remover se quiser apenas o hero com fundo */}
+            <div className="mt-32 mx-auto max-w-7xl px-6">
+              <AnimatedGroup
+                variants={{
+                  container: {
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.05,
+                        delayChildren: 1.5,
+                      },
                     },
                   },
-                },
-                ...transitionVariants,
-              }}
-            >
-              <div className="mask-b-from-55% relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
-                  <Image
-                    className="bg-background aspect-15/8 relative hidden rounded-2xl dark:block"
-                    src="/mail2.png"
-                    alt="app screen"
-                    width="2700"
-                    height="1440"
-                  />
-                  <Image
-                    className="z-2 border-border/25 aspect-15/8 relative rounded-2xl border dark:hidden"
-                    src="/mail2-light.png"
-                    alt="app screen"
-                    width="2700"
-                    height="1440"
-                  />
-                </div>
-              </div>
-            </AnimatedGroup>
-          </div>
-        </section>
-        <section className="bg-background pb-16 pt-16 md:pb-32">
-          <div className="group relative m-auto max-w-5xl px-6">
-            <div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
-              <Link
-                href="/"
-                className="block text-sm duration-150 hover:opacity-75"
+                  ...transitionVariants,
+                }}
+                className="grid md:grid-cols-3 gap-6"
               >
-                <span> Meet Our Customers</span>
-
-                <ChevronRight className="ml-1 inline-block size-3" />
-              </Link>
-            </div>
-            <div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
-              <div className="flex">
-                <img
-                  className="mx-auto h-5 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/nvidia.svg"
-                  alt="Nvidia Logo"
-                  height="20"
-                  width="auto"
-                />
-              </div>
-
-              <div className="flex">
-                <img
-                  className="mx-auto h-4 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/column.svg"
-                  alt="Column Logo"
-                  height="16"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-4 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/github.svg"
-                  alt="GitHub Logo"
-                  height="16"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-5 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/nike.svg"
-                  alt="Nike Logo"
-                  height="20"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-5 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg"
-                  alt="Lemon Squeezy Logo"
-                  height="20"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-4 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/laravel.svg"
-                  alt="Laravel Logo"
-                  height="16"
-                  width="auto"
-                />
-              </div>
-              <div className="flex">
-                <img
-                  className="mx-auto h-7 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/lilly.svg"
-                  alt="Lilly Logo"
-                  height="28"
-                  width="auto"
-                />
-              </div>
-
-              <div className="flex">
-                <img
-                  className="mx-auto h-6 w-fit dark:invert"
-                  src="https://html.tailus.io/blocks/customers/openai.svg"
-                  alt="OpenAI Logo"
-                  height="24"
-                  width="auto"
-                />
-              </div>
+                {/* Cards informativos opcionais com fundo translúcido */}
+                <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Economia
+                  </h3>
+                  <p className="text-white/80">
+                    Reduza seus custos com energia através de análises
+                    inteligentes
+                  </p>
+                </div>
+                <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Sustentabilidade
+                  </h3>
+                  <p className="text-white/80">
+                    Contribua para um futuro mais verde com gestão eficiente
+                  </p>
+                </div>
+                <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Controle
+                  </h3>
+                  <p className="text-white/80">
+                    Monitore e gerencie seu consumo em tempo real
+                  </p>
+                </div>
+              </AnimatedGroup>
             </div>
           </div>
         </section>
