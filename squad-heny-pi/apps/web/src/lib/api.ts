@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 
 const api: AxiosInstance = axios.create({
   baseURL: "http://localhost:8000/api", // troque para a URL da sua API Laravel
-  withCredentials: true, // útil se for cookies/sanctum, pode deixar false se usar JWT puro
+  withCredentials: false, // está falso para evitar problemas de CORS
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

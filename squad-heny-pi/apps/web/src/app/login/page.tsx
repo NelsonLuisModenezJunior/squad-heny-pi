@@ -55,6 +55,12 @@ export default function Login() {
         window.location.href = "/";
       }
     } catch (error: any) {
+      console.error("=== ERRO COMPLETO ===");
+      console.error("Status:", error.response?.status);
+      console.error("Data:", error.response?.data);
+      console.error("Headers:", error.response?.headers);
+      console.error("Message:", error.message);
+      console.error("Full error:", error);
       console.error("Erro no login:", error.response?.data || error.message);
       alert("Credenciais inválidas!");
     }
