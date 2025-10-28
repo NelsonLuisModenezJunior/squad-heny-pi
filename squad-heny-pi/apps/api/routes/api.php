@@ -4,22 +4,31 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\EletroController;
 
-// Public routes (no authentication required)
+// Rotas Públicas (sem autenticação)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes (JWT authentication required)
+// Rotas Protegidas (autenticação JWT necessária)
 Route::middleware('auth:api')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
-    
-    // User CRUD routes
+
+    // CRUD usuários
     Route::apiResource('users', UserController::class);
+
+    // CRUD eletrodomésticos
+    Route::apiResource('eletros', EletroController::class);
+
+    // Rota para obter as classificações de eficiência do eletrodoméstico
+    Route::get('/classificacoes', function() {
+        return response()->json(Eletro::CLASSIFICACOES);
+    });
     
-    // Original route (now using JWT instead of Sanctum)
+    // Rota original (com JWT ao invés de sanctum)
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
