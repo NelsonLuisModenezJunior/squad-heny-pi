@@ -27,6 +27,12 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/classificacoes', function() {
         return response()->json(Eletro::CLASSIFICACOES);
     });
+
+    // Rotas para estados
+    Route::apiResource('estados', EstadoController::class)->only(['index', 'show']);
+
+    // Rotas para locais
+    Route::apiResource('locais', LocalController::class);
     
     // Rota original (com JWT ao invés de sanctum)
     Route::get('/user', function (Request $request) {

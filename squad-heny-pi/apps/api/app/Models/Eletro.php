@@ -24,6 +24,7 @@ class Eletro extends Model
      */
     protected $fillable = [
         'categoria_id',
+        'local_id',
         'eletro_nome',
         'eletro_emissao',
         'eletro_potencia',
@@ -76,5 +77,10 @@ class Eletro extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'categoria_id', 'categoria_id');
+    }
+
+    public function local()
+    {
+        return $this->belongsTo(Local::class, 'local_id');
     }
 }

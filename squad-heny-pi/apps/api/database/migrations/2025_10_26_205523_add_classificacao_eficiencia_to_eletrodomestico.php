@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('eletrodomestico', function (Blueprint $table) {
+        Schema::table('eletrodomesticos', function (Blueprint $table) {
             $table->enum('classificacao_eficiencia', ['A+', 'A', 'B', 'C', 'D', 'E'])
                   ->nullable()
                   ->after('eletro_potencia');
@@ -17,7 +17,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('eletrodomestico', function (Blueprint $table) {
+        Schema::table('eletrodomesticos', function (Blueprint $table) {
             $table->dropColumn('classificacao_eficiencia');
         });
     }
