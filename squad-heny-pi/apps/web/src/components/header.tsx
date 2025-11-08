@@ -1,13 +1,14 @@
 "use client";
-import Link from "next/link";
-import { Logo } from "@/components/logo";
-import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import React from "react";
+import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 
 const menuItems = [
-  { name: "Relatórios", href: "#link" },
+  { name: "Home", href: "/" },
+  { name: "Relatórios", href: "/relatorio" },
   { name: "FAQ", href: "#link" },
   { name: "Sobre nós", href: "#link" },
 ];
@@ -16,13 +17,38 @@ export const HeroHeader = () => {
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
 
+  // autenticação simples baseada no token salvo pela sua tela de login (localStorage)
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
+
   React.useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
+    if (typeof window === "undefined") return;
+    const check = () => setIsAuthenticated(!!localStorage.getItem("token"));
+    check();
+
+    // atualiza quando outra aba muda o token
+    const onStorage = () => check();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  React.useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleAuthClick = () => {
+    if (isAuthenticated) {
+      // logout simples
+      localStorage.removeItem("token");
+      setIsAuthenticated(false);
+      window.location.href = "/";
+    } else {
+      // abre sua tela de login
+      window.location.href = "/login";
+    }
+  };
+
   return (
     <header>
       <nav
@@ -48,7 +74,7 @@ export const HeroHeader = () => {
 
               <button
                 onClick={() => setMenuState(!menuState)}
-                aria-label={menuState == true ? "Close Menu" : "Open Menu"}
+                aria-label={menuState ? "Close Menu" : "Open Menu"}
                 className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden"
               >
                 <Menu className="in-data-[state=active]:rotate-180 in-data-[state=active]:scale-0 in-data-[state=active]:opacity-0 m-auto size-6 duration-200" />
@@ -58,65 +84,58 @@ export const HeroHeader = () => {
 
             <div className="absolute inset-0 m-auto hidden size-fit lg:block">
               <ul className="flex gap-8 text-sm">
-                {menuItems.map((item, index) => (
-                  <li key={index}>
+                {menuItems.map((item) => (
+                  <li key={`${item.href}-${item.name}`}>
                     <Link
                       href={item.href}
-                      className="text-muted-foreground hover:text-accent-foreground block duration-150"
+                      className="text-sm text-foreground/80 hover:text-foreground"
                     >
-                      <span>{item.name}</span>
+                      {item.name}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="bg-background in-data-[state=active]:block lg:in-data-[state=active]:flex mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border p-6 shadow-2xl shadow-zinc-300/20 md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent">
-              <div className="lg:hidden">
-                <ul className="space-y-6 text-base">
-                  {menuItems.map((item, index) => (
-                    <li key={index}>
+            {/* botão Entrar / Logout */}
+            <div className="hidden lg:flex lg:items-center">
+              <button
+                onClick={handleAuthClick}
+                className="rounded-md bg-gradient-to-r from-[#79BA92] to-[#51A471] px-4 py-2 text-sm font-medium text-white shadow-lg hover:scale-105 transition"
+              >
+                {isAuthenticated ? "Logout" : "Entrar"}
+              </button>
+            </div>
+
+            {/* mobile menu panel */}
+            {menuState && (
+              <div className="lg:hidden absolute inset-x-2 top-full mt-2 rounded-xl bg-background/60 p-4 backdrop-blur-md shadow-lg">
+                <ul className="flex flex-col gap-3">
+                  {menuItems.map((item) => (
+                    <li key={`${item.href}-${item.name}`}>
                       <Link
                         href={item.href}
-                        className="text-muted-foreground hover:text-accent-foreground block duration-150"
+                        onClick={() => setMenuState(false)}
+                        className="block px-3 py-2 rounded-md"
                       >
-                        <span>{item.name}</span>
+                        {item.name}
                       </Link>
                     </li>
                   ))}
+                  <li>
+                    <button
+                      onClick={() => {
+                        handleAuthClick();
+                        setMenuState(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-md"
+                    >
+                      {isAuthenticated ? "Logout" : "Entrar"}
+                    </button>
+                  </li>
                 </ul>
               </div>
-              <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className={cn(isScrolled && "lg:hidden")}
-                >
-                  <Link href="#">
-                    <span>Entrar</span>
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="sm"
-                  className={cn(isScrolled && "lg:hidden")}
-                >
-                  <Link href="#">
-                    <span>Cadastrar-se</span>
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="sm"
-                  className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
-                >
-                  <Link href="#">
-                    <span>Cadastrar-se</span>
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </nav>
