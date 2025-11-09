@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\EletroController;
+use App\Http\Controllers\ReportController;
 
 // Rotas Públicas (sem autenticação)
 Route::post('/register', [AuthController::class, 'register']);
@@ -33,6 +34,9 @@ Route::middleware('auth:api')->group(function () {
 
     // Rotas para locais
     Route::apiResource('locais', LocalController::class);
+    
+    // Rotas de relatórios
+    Route::get('/reports/consumption/{locationId}', [ReportController::class, 'getConsumption']);
     
     // Rota original (com JWT ao invés de sanctum)
     Route::get('/user', function (Request $request) {

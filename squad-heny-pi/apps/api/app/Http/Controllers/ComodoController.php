@@ -38,14 +38,14 @@ class ComodoController extends Controller
             'comodo_nome' => 'sometimes|required|string|max:255',
         ]);
 
-        $categoria->update($validated);
-        return response()->json($categoria);
+        $comodo->update($validated);
+        return response()->json($comodo);
     }
 
     public function destroy(string $id): JsonResponse
     {
-        $categoria = Categoria::findOrFail($id);
-        $categoria->delete();
+        $comodo = Comodo::findOrFail($id);
+        $comodo->delete();
         return response()->json(null, 204);
     }
 }

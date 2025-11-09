@@ -11,6 +11,11 @@ class EficienciaService
      */
     public function calcularClassificacao(Eletro $eletro): string
     {
+        // Use stored classification if available
+        if (!empty($eletro->classificacao_eficiencia)) {
+            return $eletro->classificacao_eficiencia;
+        }
+
         $potencia = $eletro->eletro_potencia;
         $categoriaNome = $eletro->categoria?->categoria_nome;
         
@@ -123,7 +128,16 @@ class EficienciaService
      */
     public function calcularConsumoKwhMes(Eletro $eletro): float
     {
-        return round($this->calcularConsumoKwhDia($eletro) * 30, 2);
+        // Use stored monthly consumption if available
+        if (!is_null($eletro->eletro_mensal_kwh)) {
+            return round($eletro->eletro_mensal_kwh, 2);
+        }
+        
+        $consumo = round($this->calcularConsumoKwhDia($eletro) * 30, 2);
+        $eletro->eletro_mensal_kwh = $consumo;
+        $eletro->save();
+        
+        return $consumo;
     }
     
     /**
@@ -131,7 +145,16 @@ class EficienciaService
      */
     public function calcularConsumoKwhAno(Eletro $eletro): float
     {
-        return round($this->calcularConsumoKwhDia($eletro) * 365, 2);
+        // Use stored annual consumption if available
+        if (!is_null($eletro->eletro_anual_kwh)) {
+            return round($eletro->eletro_anual_kwh, 2);
+        }
+        
+        $consumo = round($this->calcularConsumoKwhDia($eletro) * 365, 2);
+        $eletro->eletro_anual_kwh = $consumo;
+        $eletro->save();
+        
+        return $consumo;
     }
     
     /**
@@ -152,5 +175,131 @@ class EficienciaService
     public function calcularCustoAnual(Eletro $eletro, float $tarifaKwh = 0.85): float
     {
         return round($this->calcularConsumoKwhAno($eletro) * $tarifaKwh, 2);
+    }
+
+    /**
+     * Calculate total monthly consumption for a collection of appliances
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     */
+    public function calcularConsumoTotalMes($eletros): float
+    {
+        return round($eletros->sum(fn($eletro) => $this->calcularConsumoKwhMes($eletro)), 2);
+    }
+
+    /**
+     * Calculate total monthly cost for a collection of appliances
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     * @param float $tarifaKwh Electricity rate in R$/kWh
+     */
+    public function calcularCustoTotalMes($eletros, float $tarifaKwh): float
+    {
+        return round($eletros->sum(fn($eletro) => $this->calcularCustoMensal($eletro, $tarifaKwh)), 2);
+    }
+
+    /**
+     * Get consumption grouped by room (comodo)
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     * @return array Array of rooms with their consumption
+     */
+    public function getConsumoPorComodo($eletros): array
+    {
+        $consumoPorComodo = [];
+        
+        foreach ($eletros as $eletro) {
+            $comodo = $eletro->comodo?->comodo_nome ?? 'Outros';
+            
+            if (!isset($consumoPorComodo[$comodo])) {
+                $consumoPorComodo[$comodo] = 0;
+            }
+            
+            $consumoPorComodo[$comodo] += $this->calcularConsumoKwhMes($eletro);
+        }
+
+        // Round values and format for response
+        return array_map(function($consumo) {
+            return round($consumo, 2);
+        }, $consumoPorComodo);
+    }
+
+    /**
+     * Get efficiency distribution of appliances
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     * @return array Array with count of appliances per efficiency rating
+     */
+    public function getDistribuicaoEficiencia($eletros): array
+    {
+        $distribuicao = [
+            'A+' => 0,
+            'A' => 0,
+            'B' => 0,
+            'C' => 0,
+            'D' => 0,
+            'E' => 0
+        ];
+
+        foreach ($eletros as $eletro) {
+            $classificacao = $this->calcularClassificacao($eletro);
+            $distribuicao[$classificacao]++;
+        }
+
+        return $distribuicao;
+    }
+
+    /**
+     * Calculate efficiency rate (percentage of A/A+ appliances)
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     * @return float Percentage of efficient appliances
+     */
+    public function calcularTaxaEficiencia($eletros): float
+    {
+        if ($eletros->isEmpty()) {
+            return 0;
+        }
+
+        $eficientes = $eletros->filter(fn($eletro) => 
+            in_array($this->calcularClassificacao($eletro), ['A', 'A+'])
+        )->count();
+
+        return round(($eficientes / $eletros->count()) * 100, 2);
+    }
+
+    /**
+     * Calculate total annual CO2 emissions for a collection of appliances
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     * @return float Total CO2 emissions in kg
+     */
+    /**
+     * Calculate annual CO2 emissions for a single appliance
+     */
+    public function calcularEmissaoCO2Anual(Eletro $eletro): float
+    {
+        if (!is_null($eletro->eletro_emissao_co2_anual)) {
+            return round($eletro->eletro_emissao_co2_anual, 2);
+        }
+        
+        $emissao = round($this->calcularConsumoKwhAno($eletro) * ($eletro->eletro_emissao ?? 0.5), 2);
+        $eletro->eletro_emissao_co2_anual = $emissao;
+        $eletro->save();
+        
+        return $emissao;
+    }
+
+    /**
+     * Calculate total annual CO2 emissions for a collection of appliances
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     * @return float Total CO2 emissions in kg
+     */
+    public function calcularEmissaoCO2Total($eletros): float
+    {
+        return round($eletros->sum(function ($eletro) {
+            return $this->calcularEmissaoCO2Anual($eletro);
+        }), 2);
     }
 }
