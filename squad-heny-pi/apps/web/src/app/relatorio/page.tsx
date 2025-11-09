@@ -21,7 +21,6 @@ import {
   Leaf,
   TrendingUp,
   Filter,
-  Download,
   Edit2,
   Calendar,
   MapPin,
@@ -46,6 +45,7 @@ interface Appliance {
   material: string;
   carbonFootprint: number;
   efficiency: string;
+  category?: string;
 }
 
 interface LocationData {
@@ -138,7 +138,8 @@ const RelatorioEnergia = () => {
     hoursPerDay: 0,
     material: "",
     carbonFootprint: 0,
-    efficiency: "A",
+    efficiency: "",
+    category: "Geladeira",
   });
 
   const [newLocation, setNewLocation] = useState<
@@ -362,27 +363,79 @@ const RelatorioEnergia = () => {
     },
   ];
 
-  const suggestions = useMemo(() => {
-    const highConsumers = filteredAppliances
-      .map((a) => ({
-        ...a,
-        monthlyKwh: (a.power * a.hoursPerDay * 30) / 1000,
-      }))
-      .sort((a, b) => b.monthlyKwh - a.monthlyKwh)
-      .slice(0, 3);
+  // Savings simulator state and logic
+  const [simApplianceId, setSimApplianceId] = useState<string>(
+    filteredAppliances.length > 0 ? filteredAppliances[0].id : ""
+  );
+  const [simHours, setSimHours] = useState<number>(
+    filteredAppliances.length > 0 ? filteredAppliances[0].hoursPerDay : 0
+  );
+  const [simTariff, setSimTariff] = useState<number>(location.tariff || 0.92);
+  const [simReplacement, setSimReplacement] = useState<"A+" | "A++">("A+");
+  const [simResult, setSimResult] = useState<{
+    currentKwh: number;
+    newKwh: number;
+    savingsKwh: number;
+    monthlySavings: number;
+    annualSavings: number;
+  } | null>(null);
 
-    return highConsumers.map((a) => ({
-      appliance: a.name,
-      currentConsumption: a.monthlyKwh.toFixed(2),
-      suggestion:
-        a.efficiency === "C" || a.efficiency === "D"
-          ? `Substituir por modelo A+ pode economizar até ${(
-              a.monthlyKwh * 0.4
-            ).toFixed(2)} kWh/mês`
-          : "Otimizar uso reduzindo tempo de funcionamento",
-      priority: a.efficiency === "C" || a.efficiency === "D" ? "Alta" : "Média",
-    }));
+  // logged user from localStorage (shown under report title)
+  const [loggedUser, setLoggedUser] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (!raw) return setLoggedUser(null);
+      try {
+        const parsed = JSON.parse(raw);
+        setLoggedUser(parsed?.name || String(parsed));
+      } catch {
+        setLoggedUser(raw);
+      }
+    } catch (err) {
+      setLoggedUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    // when available appliances change, reset simulator defaults
+    if (filteredAppliances.length > 0) {
+      setSimApplianceId(filteredAppliances[0].id);
+      setSimHours(filteredAppliances[0].hoursPerDay);
+    } else {
+      setSimApplianceId("");
+      setSimHours(0);
+    }
   }, [filteredAppliances]);
+
+  useEffect(() => {
+    setSimTariff(location.tariff || 0.92);
+  }, [location.tariff]);
+
+  const runSimulation = () => {
+    const appliance = filteredAppliances.find((a) => a.id === simApplianceId);
+    if (!appliance) return;
+
+    const hours = simHours || appliance.hoursPerDay || 0;
+    const currentKwh = (appliance.power * hours * 30) / 1000;
+
+    // coarse savings estimates: A+ => 30% less energy, A++ => 45% less
+    const factor =
+      simReplacement === "A+" ? 0.3 : simReplacement === "A++" ? 0.45 : 0;
+    const newKwh = currentKwh * (1 - factor);
+    const savingsKwh = currentKwh - newKwh;
+    const monthlySavings = savingsKwh * simTariff;
+    const annualSavings = monthlySavings * 12;
+
+    setSimResult({
+      currentKwh,
+      newKwh,
+      savingsKwh,
+      monthlySavings,
+      annualSavings,
+    });
+  };
 
   const toggleAppliance = (id: string) => {
     setSelectedAppliances((prev) =>
@@ -390,17 +443,7 @@ const RelatorioEnergia = () => {
     );
   };
 
-  const exportReport = () => {
-    const reportData = {
-      nome: reportName,
-      data: new Date().toLocaleDateString("pt-BR"),
-      local: `${location.city}, ${location.state}`,
-      estatisticas: stats,
-      eletrodomesticos: filteredAppliances,
-    };
-    console.log("Exportando relatório:", reportData);
-    alert("Relatório exportado! Verifique o console.");
-  };
+  // exportReport removed — exporting handled elsewhere or not needed
 
   const getLocationIcon = (icon: string, size: number = 48) => {
     const iconProps = { size, strokeWidth: 1.5 };
@@ -708,25 +751,6 @@ const RelatorioEnergia = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
-                        CEP
-                      </label>
-                      <input
-                        type="text"
-                        value={newLocation.cep}
-                        onChange={(e) =>
-                          setNewLocation({
-                            ...newLocation,
-                            cep: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        placeholder="00000-000"
-                        maxLength={9}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         Estado *
                       </label>
                       <select
@@ -856,16 +880,29 @@ const RelatorioEnergia = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Back Button & Location Info */}
+        {/* Back Button & Location Info (now hosts centered report title) */}
         <div className="bg-white rounded-xl shadow-lg p-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setCurrentView("locations")}
-              className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors font-medium"
-            >
-              <ArrowLeft size={20} />
-              Voltar para Locais
-            </button>
+          <div className="relative flex items-center justify-between">
+            <div>
+              <button
+                onClick={() => setCurrentView("locations")}
+                className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors font-medium"
+              >
+                <ArrowLeft size={20} />
+                Voltar para Locais
+              </button>
+            </div>
+
+            {/* centered title */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
+              <h2 className="text-xl font-semibold text-slate-800">
+                {reportName}
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                {loggedUser || "Usuário não identificado"}
+              </p>
+            </div>
+
             {currentLocation && (
               <div className="flex items-center gap-3">
                 <div
@@ -887,6 +924,8 @@ const RelatorioEnergia = () => {
             )}
           </div>
         </div>
+
+        {/* Report Title Bar removed (now rendered inside the Back/Location box) */}
 
         {/* Filtros */}
         <div className="bg-white rounded-xl shadow-lg p-6">
@@ -916,7 +955,7 @@ const RelatorioEnergia = () => {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Eletrodomésticos
+                Categorias de Eletrodomésticos
               </label>
               <div className="flex flex-wrap gap-2">
                 {appliances.map((a) => (
@@ -1056,97 +1095,150 @@ const RelatorioEnergia = () => {
             <div className="flex items-center gap-2 mb-4">
               <Lightbulb className="text-amber-500" size={24} />
               <h3 className="text-lg font-semibold text-slate-800">
-                Sugestões Inteligentes
+                Simulador de Economia
               </h3>
             </div>
-            <div className="space-y-3">
-              {suggestions.map((sug, idx) => (
-                <div
-                  key={idx}
-                  className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold text-slate-800">
-                      {sug.appliance}
-                    </h4>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        sug.priority === "Alta"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
+
+            {filteredAppliances.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                Nenhum eletrodoméstico disponível para simular. Adicione
+                aparelhos e tente novamente.
+              </div>
+            ) : (
+              <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Eletrodoméstico
+                    </label>
+                    <select
+                      value={simApplianceId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setSimApplianceId(id);
+                        const ap = filteredAppliances.find((a) => a.id === id);
+                        if (ap) setSimHours(ap.hoursPerDay);
+                      }}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                     >
-                      {sug.priority}
-                    </span>
+                      {filteredAppliances.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name} — {a.power}W — {a.efficiency}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <p className="text-sm text-slate-600 mb-2">
-                    Consumo atual:{" "}
-                    <span className="font-semibold">
-                      {sug.currentConsumption} kWh/mês
-                    </span>
-                  </p>
-                  <p className="text-sm text-slate-700">{sug.suggestion}</p>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Horas de uso por dia
+                    </label>
+                    <input
+                      type="number"
+                      value={simHours}
+                      onChange={(e) =>
+                        setSimHours(parseFloat(e.target.value) || 0)
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      step="0.1"
+                      min={0}
+                      max={24}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Tarifa (R$/kWh)
+                    </label>
+                    <input
+                      type="number"
+                      value={simTariff}
+                      onChange={(e) =>
+                        setSimTariff(parseFloat(e.target.value) || 0)
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      step="0.01"
+                      min={0}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Substituir por
+                    </label>
+                    <select
+                      value={simReplacement}
+                      onChange={(e) =>
+                        setSimReplacement(e.target.value as "A+" | "A++")
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="A+">A+ (estimativa ~30% economia)</option>
+                      <option value="A++">
+                        A++ (estimativa ~45% economia)
+                      </option>
+                    </select>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={runSimulation}
+                    className="px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+                  >
+                    Simular
+                  </button>
+                  <button
+                    onClick={() => setSimResult(null)}
+                    className="px-6 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+                  >
+                    Resetar
+                  </button>
+                </div>
+
+                {simResult ? (
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <p className="text-sm text-slate-600">Consumo atual</p>
+                      <p className="text-2xl font-bold text-slate-800">
+                        {simResult.currentKwh.toFixed(2)} kWh/mês
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <p className="text-sm text-slate-600">
+                        Após substituição
+                      </p>
+                      <p className="text-2xl font-bold text-slate-800">
+                        {simResult.newKwh.toFixed(2)} kWh/mês
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <p className="text-sm text-slate-600">
+                        Economia estimada
+                      </p>
+                      <p className="text-2xl font-bold text-emerald-600">
+                        {simResult.savingsKwh.toFixed(2)} kWh/mês
+                      </p>
+                      <p className="text-sm text-slate-600 mt-1">
+                        R$ {simResult.monthlySavings.toFixed(2)}/mês — R${" "}
+                        {simResult.annualSavings.toFixed(2)}/ano
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 mt-4">
+                    Configure os parâmetros e clique em "Simular" para ver a
+                    estimativa.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="flex-1">
-              {isEditingName ? (
-                <input
-                  type="text"
-                  value={reportName}
-                  onChange={(e) => setReportName(e.target.value)}
-                  onBlur={() => setIsEditingName(false)}
-                  className="text-3xl font-bold text-slate-800 border-b-2 border-emerald-500 focus:outline-none"
-                  autoFocus
-                />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold text-slate-800">
-                    {reportName}
-                  </h1>
-                  <button
-                    onClick={() => setIsEditingName(true)}
-                    className="text-slate-400 hover:text-emerald-600"
-                  >
-                    <Edit2 size={20} />
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center gap-4 mt-2 text-slate-600">
-                <span className="flex items-center gap-1">
-                  <Calendar size={16} />
-                  {new Date().toLocaleDateString("pt-BR")}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MapPin size={16} />
-                  {location.city}, {location.state}
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Plus size={20} />
-                Adicionar
-              </button>
-              <button
-                onClick={exportReport}
-                className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
-              >
-                <Download size={20} />
-                Exportar
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* removed original Header here because moved to top */}
 
         {/* Modal de Adicionar Eletrodoméstico */}
         {isModalOpen && (
@@ -1250,20 +1342,27 @@ const RelatorioEnergia = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Material Principal
+                      Categoria
                     </label>
-                    <input
-                      type="text"
-                      value={newAppliance.material}
+                    <select
+                      value={newAppliance.category}
                       onChange={(e) =>
                         setNewAppliance({
                           ...newAppliance,
-                          material: e.target.value,
+                          category: e.target.value,
                         })
                       }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Aço inoxidável"
-                    />
+                    >
+                      <option value="Geladeira">Geladeira</option>
+                      <option value="Freezer">Freezer</option>
+                      <option value="Fogão elétrico">Fogão elétrico</option>
+                      <option value="Micro-ondas">Micro-ondas</option>
+                      <option value="Lavadora">Lavadora</option>
+                      <option value="Secadora">Secadora</option>
+                      <option value="Ar-condicionado">Ar-condicionado</option>
+                      <option value="Outro">Outro</option>
+                    </select>
                   </div>
 
                   <div>
@@ -1283,30 +1382,6 @@ const RelatorioEnergia = () => {
                       placeholder="Ex: 450"
                       min="0"
                     />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Eficiência Energética
-                    </label>
-                    <select
-                      value={newAppliance.efficiency}
-                      onChange={(e) =>
-                        setNewAppliance({
-                          ...newAppliance,
-                          efficiency: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="A++">A++ (Mais Eficiente)</option>
-                      <option value="A+">A+</option>
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E (Menos Eficiente)</option>
-                    </select>
                   </div>
                 </div>
 
@@ -1353,7 +1428,6 @@ const RelatorioEnergia = () => {
                 {filteredAppliances.length}
               </span>
             </div>
-
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setApplianceView("cards")}
@@ -1374,6 +1448,13 @@ const RelatorioEnergia = () => {
                 }`}
               >
                 Lista
+              </button>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="ml-3 flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Plus size={16} />
+                Adicionar
               </button>
             </div>
           </div>
@@ -1562,35 +1643,6 @@ const RelatorioEnergia = () => {
               </div>
             </div>
           )}
-        </div>
-        {/* Informações Ambientais */}
-        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 rounded-xl shadow-lg p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="text-blue-600 mt-1" size={24} />
-            <div>
-              <h3 className="font-semibold text-slate-800 mb-2">
-                Impacto Ambiental dos Materiais
-              </h3>
-              <p className="text-slate-700 mb-3">
-                Eletrodomésticos utilizam diversos materiais com diferentes
-                impactos ambientais:
-              </p>
-              <ul className="space-y-2 text-sm text-slate-700">
-                <li>
-                  • <strong>Aço inoxidável:</strong> Reciclável 100%, mas
-                  produção emite 1,9kg CO₂ por kg de aço
-                </li>
-                <li>
-                  • <strong>Alumínio:</strong> Requer 15.000 kWh/tonelada na
-                  produção, mas reciclar economiza 95% da energia
-                </li>
-                <li>
-                  • <strong>Plástico:</strong> Derivado do petróleo, leva até
-                  400 anos para se degradar
-                </li>
-              </ul>
-            </div>
-          </div>
         </div>
       </div>
     </div>

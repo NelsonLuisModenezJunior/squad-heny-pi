@@ -9,8 +9,8 @@ import { Logo } from "@/components/logo";
 const menuItems = [
   { name: "Home", href: "/" },
   { name: "Relatórios", href: "/relatorio" },
-  { name: "FAQ", href: "#link" },
-  { name: "Sobre nós", href: "#link" },
+  { name: "FAQ", href: "/faq" },
+  { name: "Sobre nós", href: "/sobre" },
 ];
 
 export const HeroHeader = () => {
