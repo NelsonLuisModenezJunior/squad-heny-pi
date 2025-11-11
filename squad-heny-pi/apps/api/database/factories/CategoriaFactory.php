@@ -12,13 +12,20 @@ class CategoriaFactory extends Factory
     public function definition(): array
     {
         $categorias = [
-            'Refrigeração',
-            'Lavanderia',
-            'Cozinha',
-            'Climatização',
-            'Limpeza',
-            'Aquecimento',
-            'Pequenos Eletrodomésticos',
+            'Geladeira',
+            'Ar Condicionado',
+            'TV',
+            'Máquina de Lavar',
+            'Forno Elétrico',
+            'Secadora de Roupas',
+            'Fogão a Gás',
+            'Micro-ondas',
+            'Aspirador de Pó',
+            'Liquidificador',
+            'Ferro de Passar',
+            'Cafeteira Elétrica',
+            'Freezer',
+            'Outros'
         ];
 
         return [

@@ -23,11 +23,11 @@ class EletroController extends Controller
             'eletro_potencia' => 'required|numeric|min:0|max:9999.99',
             'eletro_dt_criado' => 'required|date',
             'eletro_hrs_uso_dia' => 'required|integer|min:0|max:24',
-            'eletro_mensal_kwh' => 'required|numeric|min:0|max:9999.99',
-            'eletro_anual_kwh' => 'required|numeric|min:0|max:9999.99',
-            'eletro_custo_mensal' => 'required|numeric|min:0|max:9999.99',
-            'eletro_custo_anual' => 'required|numeric|min:0|max:9999.99',
-            'eletro_emissao_co2_anual' => 'required|numeric|min:0|max:9999.99',
+            'eletro_mensal_kwh' => 'nullable|numeric|min:0|max:9999.99',
+            'eletro_anual_kwh' => 'nullable|numeric|min:0|max:9999.99',
+            'eletro_custo_mensal' => 'nullable|numeric|min:0|max:9999.99',
+            'eletro_custo_anual' => 'nullable|numeric|min:0|max:9999.99',
+            'eletro_emissao_co2_anual' => 'nullable|numeric|min:0|max:9999.99',
         ]);
 
         $eletro = Eletro::create($validated);

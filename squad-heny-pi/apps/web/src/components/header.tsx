@@ -9,8 +9,8 @@ import { Logo } from "@/components/logo";
 const menuItems = [
   { name: "Home", href: "/" },
   { name: "Relatórios", href: "/relatorio" },
-  { name: "FAQ", href: "#link" },
-  { name: "Sobre nós", href: "#link" },
+  { name: "FAQ", href: "/faq" },
+  { name: "Sobre nós", href: "/sobre" },
 ];
 
 export const HeroHeader = () => {
@@ -39,8 +39,9 @@ export const HeroHeader = () => {
 
   const handleAuthClick = () => {
     if (isAuthenticated) {
-      // logout simples
+      // logout completo
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       setIsAuthenticated(false);
       window.location.href = "/";
     } else {

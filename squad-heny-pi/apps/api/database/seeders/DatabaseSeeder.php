@@ -16,9 +16,9 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         $this->call([
+            ComodoSeeder::class,
             CategoriaSeeder::class,
             EstadoSeeder::class,
-            comodoSeeder::class
         ]);
 
         User::factory()->create([

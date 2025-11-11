@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\Categoria;
+use App\Models\Comodo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class CategoriaFactory extends Factory
+class ComodoFactory extends Factory
 {
-    protected $model = Categoria::class;
+    protected $model = Comodo::class;
 
     public function definition(): array
     {

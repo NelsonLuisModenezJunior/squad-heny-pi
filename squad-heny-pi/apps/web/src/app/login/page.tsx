@@ -42,10 +42,14 @@ export default function Login() {
         password,
       });
       const token = response.data.authorization?.token;
-      if (token) {
+      const user = response.data.user;
+      if (token && user) {
         localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
         alert("Login realizado com sucesso!");
-        window.location.href = "/";
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1000);
       }
     } catch {
       alert("Credenciais inválidas!");

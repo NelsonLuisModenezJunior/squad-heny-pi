@@ -12,7 +12,7 @@ class Eletro extends Model
     /**
      * Table name in database
      */
-    protected $table = 'eletrodomestico';
+    protected $table = 'eletrodomesticos';
 
     /**
      * Primary key column

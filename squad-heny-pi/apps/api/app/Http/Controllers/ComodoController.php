@@ -1,51 +1,22 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Comodo;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class ComodoController extends Controller
 {
+    //listar todos os cômodos
     public function index(): JsonResponse
     {
-        $comodos = Comodo::with('eletros')->get();
+        $comodos = Comodo::all();
         return response()->json($comodos);
     }
 
-    public function store(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'comodo_nome' => 'required|string|max:255',
-        ]);
-
-        $comodo = Comodo::create($validated);
-        return response()->json($comodo, 201);
-    }
-
+    //mostrar um cômodo específico
     public function show(string $id): JsonResponse
     {
         $comodo = Comodo::with('eletros')->findOrFail($id);
         return response()->json($comodo);
-    }
-
-    public function update(Request $request, string $id): JsonResponse
-    {
-        $comodo = Comodo::findOrFail($id);
-
-        $validated = $request->validate([
-            'comodo_nome' => 'sometimes|required|string|max:255',
-        ]);
-
-        $comodo->update($validated);
-        return response()->json($comodo);
-    }
-
-    public function destroy(string $id): JsonResponse
-    {
-        $comodo = Comodo::findOrFail($id);
-        $comodo->delete();
-        return response()->json(null, 204);
     }
 }

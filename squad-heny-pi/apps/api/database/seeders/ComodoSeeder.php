@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Categoria;
+use App\Models\Comodo;
 use Illuminate\Support\Facades\DB;
 
 class ComodoSeeder extends Seeder
