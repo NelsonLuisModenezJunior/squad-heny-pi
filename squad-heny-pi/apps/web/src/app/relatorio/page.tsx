@@ -45,7 +45,7 @@ interface Appliance {
   material: string;
   carbonFootprint: number;
   efficiency: string;
-  category?: string;
+  category: string;
 }
 
 interface LocationData {
@@ -67,7 +67,148 @@ interface Location {
   tariff: number;
 }
 
+interface Room {
+  comodo_id: number;
+  comodo_nome: string;
+}
+
+interface Category {
+  categoria_id: number;
+  categoria_nome: string;
+}
+
+interface Estado {
+  id: number;
+  estado_nome: string;
+  estado_uf: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const RelatorioEnergia = () => {
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [states, setStates] = useState<Estado[]>([]);
+  // Buscar estados
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token não encontrado");
+          return;
+        }
+
+        const response = await fetch("http://localhost:8000/api/estados", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Erro da API:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(
+            `Erro ao buscar estados: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setStates(data);
+      } catch (error) {
+        console.error("Erro ao buscar estados:", error);
+      }
+    };
+
+    fetchStates();
+  }, []);
+
+  // Buscar categorias
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token não encontrado");
+          return;
+        }
+
+        const response = await fetch("http://localhost:8000/api/categorias", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Erro da API:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(
+            `Erro ao buscar categorias: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Erro ao buscar categorias:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token não encontrado");
+          return;
+        }
+
+        console.log("Token usado:", token); // Para debug
+
+        const response = await fetch("http://localhost:8000/api/comodos", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Erro da API:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(
+            `Erro ao buscar cômodos: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setAvailableRooms(data);
+      } catch (error) {
+        console.error("Erro ao buscar cômodos:", error);
+      }
+    };
+
+    fetchRooms();
+  }, []);
   const [currentView, setCurrentView] = useState<"locations" | "report">(
     "locations"
   );
@@ -139,7 +280,7 @@ const RelatorioEnergia = () => {
     material: "",
     carbonFootprint: 0,
     efficiency: "",
-    category: "Geladeira",
+    category: "",
   });
 
   const [newLocation, setNewLocation] = useState<
@@ -149,7 +290,7 @@ const RelatorioEnergia = () => {
     icon: "home",
     cep: "",
     city: "",
-    state: "São Paulo",
+    state: "",
     address: "",
     number: "",
     tariff: 0.92,
@@ -267,6 +408,7 @@ const RelatorioEnergia = () => {
       material: "",
       carbonFootprint: 0,
       efficiency: "A",
+      category: "",
     });
   };
 
@@ -276,7 +418,10 @@ const RelatorioEnergia = () => {
     }
   };
 
-  const rooms = ["all", ...Array.from(new Set(appliances.map((a) => a.room)))];
+  const roomNames = [
+    "all",
+    ...Array.from(new Set(appliances.map((a) => a.room))),
+  ];
 
   const filteredAppliances = useMemo(() => {
     let filtered = appliances;
@@ -763,18 +908,14 @@ const RelatorioEnergia = () => {
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       >
-                        <option value="São Paulo">São Paulo</option>
-                        <option value="Rio de Janeiro">Rio de Janeiro</option>
-                        <option value="Minas Gerais">Minas Gerais</option>
-                        <option value="Bahia">Bahia</option>
-                        <option value="Paraná">Paraná</option>
-                        <option value="Santa Catarina">Santa Catarina</option>
-                        <option value="Rio Grande do Sul">
-                          Rio Grande do Sul
-                        </option>
+                        <option value="">Selecione um estado</option>
+                        {states.map((state) => (
+                          <option key={state.id} value={state.estado_nome}>
+                            {state.estado_nome} - ({state.estado_uf})
+                          </option>
+                        ))}
                       </select>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Cidade *
@@ -945,7 +1086,7 @@ const RelatorioEnergia = () => {
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="all">Todos os cômodos</option>
-                {rooms.slice(1).map((room) => (
+                {roomNames.slice(1).map((room) => (
                   <option key={room} value={room}>
                     {room}
                   </option>
@@ -1290,13 +1431,11 @@ const RelatorioEnergia = () => {
                       }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="Cozinha">Cozinha</option>
-                      <option value="Sala">Sala</option>
-                      <option value="Quarto">Quarto</option>
-                      <option value="Banheiro">Banheiro</option>
-                      <option value="Área de Serviço">Área de Serviço</option>
-                      <option value="Escritório">Escritório</option>
-                      <option value="Garagem">Garagem</option>
+                      {availableRooms.map((room) => (
+                        <option key={room.comodo_id} value={room.comodo_nome}>
+                          {room.comodo_nome}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1354,14 +1493,14 @@ const RelatorioEnergia = () => {
                       }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="Geladeira">Geladeira</option>
-                      <option value="Freezer">Freezer</option>
-                      <option value="Fogão elétrico">Fogão elétrico</option>
-                      <option value="Micro-ondas">Micro-ondas</option>
-                      <option value="Lavadora">Lavadora</option>
-                      <option value="Secadora">Secadora</option>
-                      <option value="Ar-condicionado">Ar-condicionado</option>
-                      <option value="Outro">Outro</option>
+                      {categories.map((category) => (
+                        <option
+                          key={category.categoria_id}
+                          value={category.categoria_nome}
+                        >
+                          {category.categoria_nome}
+                        </option>
+                      ))}
                     </select>
                   </div>
 

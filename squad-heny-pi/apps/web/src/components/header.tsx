@@ -39,8 +39,9 @@ export const HeroHeader = () => {
 
   const handleAuthClick = () => {
     if (isAuthenticated) {
-      // logout simples
+      // logout completo
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       setIsAuthenticated(false);
       window.location.href = "/";
     } else {
