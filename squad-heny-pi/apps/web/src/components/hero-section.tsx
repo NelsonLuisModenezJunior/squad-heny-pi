@@ -33,17 +33,17 @@ export default function HeroSection() {
       <HeroHeader />
       <main className="relative overflow-hidden min-h-screen">
         {/* Imagem de fundo cobrindo toda a tela */}
-        <div className="absolute inset-0 -z-20 h-[120vh]">
+        <div className="absolute inset-0 -z-20 h-[90vh]">
           <Image
-            src="/Floresta.jpg"
+            src="/home.jpg"
             alt="background"
             fill
             priority
-            className="object-cover"
+            className="object-cover blur-[5px]"
             quality={100}
           />
           {/* Overlay escuro para melhorar a legibilidade do texto */}
-          <div className="absolute inset-0 bg-black/40 dark:bg-black/60" />
+          <div className="absolute inset-0 bg-black/80 dark:bg-black/60" />
           {/* Efeito de névoa/gradiente na parte inferior - similar ao original */}
           <div className="mask-b-from-5 absolute inset-0" />
           <div className="absolute inset-x-0 bottom-0 h-[3.5%] bg-gradient-to-t from-background via-background/80 to-transparent" />
