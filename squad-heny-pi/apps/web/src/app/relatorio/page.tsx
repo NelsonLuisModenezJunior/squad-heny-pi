@@ -35,6 +35,14 @@ import {
   Briefcase,
   ArrowLeft,
 } from "lucide-react";
+import { localService, type Local } from "../../services/localService";
+import { tarifaService } from "../../services/tarifaService";
+import { eletroService, type Eletro } from "../../services/eletroService";
+import {
+  reportService,
+  type ReportStats,
+  type MonthlyHistory,
+} from "../../services/reportService";
 
 interface Appliance {
   id: string;
@@ -45,20 +53,19 @@ interface Appliance {
   material: string;
   carbonFootprint: number;
   efficiency: string;
-  category?: string;
+  category: string;
 }
 
 interface LocationData {
   id: string;
   name: string;
   icon: "home" | "apartment" | "business";
-  cep: string;
   city: string;
   state: string;
   address: string;
   number: string;
   tariff: number;
-  appliances: Appliance[];
+  // Removed appliances array - now loaded from backend per location
 }
 
 interface Location {
@@ -67,11 +74,180 @@ interface Location {
   tariff: number;
 }
 
+interface Room {
+  comodo_id: number;
+  comodo_nome: string;
+}
+
+interface Category {
+  categoria_id: number;
+  categoria_nome: string;
+}
+
+interface Estado {
+  id: number;
+  estado_nome: string;
+  estado_uf: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Mapper: Backend Eletro → Frontend Appliance
+function eletroToAppliance(eletro: Eletro): Appliance {
+  return {
+    id: eletro.eletro_id.toString(),
+    name: eletro.eletro_nome,
+    room: eletro.comodo?.comodo_nome || "Desconhecido",
+    power: eletro.eletro_potencia,
+    hoursPerDay: eletro.eletro_hrs_uso_dia,
+    material: "", // campo não existe no backend, pode ser removido ou preenchido default
+    carbonFootprint: eletro.eletro_emissao_co2_anual || 0,
+    efficiency: eletro.classificacao_eficiencia || "N/A", // usa classificação calculada pelo backend
+    category: eletro.categoria?.categoria_nome || "",
+  };
+}
+
 const RelatorioEnergia = () => {
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [states, setStates] = useState<Estado[]>([]);
+  // Buscar estados
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token não encontrado");
+          return;
+        }
+
+        const response = await fetch("http://localhost:8000/api/estados", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Erro da API:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(
+            `Erro ao buscar estados: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setStates(data);
+      } catch (error) {
+        console.error("Erro ao buscar estados:", error);
+      }
+    };
+
+    fetchStates();
+  }, []);
+
+  // Buscar categorias
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token não encontrado");
+          return;
+        }
+
+        const response = await fetch("http://localhost:8000/api/categorias", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Erro da API:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(
+            `Erro ao buscar categorias: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Erro ao buscar categorias:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token não encontrado");
+          return;
+        }
+
+        console.log("Token usado:", token); // Para debug
+
+        const response = await fetch("http://localhost:8000/api/comodos", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Erro da API:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(
+            `Erro ao buscar cômodos: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setAvailableRooms(data);
+      } catch (error) {
+        console.error("Erro ao buscar cômodos:", error);
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
+  // Initialize newAppliance defaults when rooms/categories load
+  useEffect(() => {
+    if (availableRooms.length > 0 || categories.length > 0) {
+      setNewAppliance((prev) => ({
+        ...prev,
+        room: availableRooms[0]?.comodo_nome || prev.room,
+        category: categories[0]?.categoria_nome || prev.category,
+      }));
+    }
+  }, [availableRooms, categories]);
+
   const [currentView, setCurrentView] = useState<"locations" | "report">(
     "locations"
   );
   const [locations, setLocations] = useState<LocationData[]>([]);
+  const [backendLocals, setBackendLocals] = useState<Local[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
     null
   );
@@ -83,20 +259,29 @@ const RelatorioEnergia = () => {
 
   const loadLocations = async () => {
     try {
-      const storage = (window as any).storage;
-      if (storage && typeof storage.get === "function") {
-        const result = await storage.get("energy-locations");
-        if (result) {
-          const savedLocations = JSON.parse(result.value);
-          setLocations(savedLocations);
-        }
-      } else {
-        // fallback to localStorage when `window.storage` is not available
-        const raw = localStorage.getItem("energy-locations");
-        if (raw) setLocations(JSON.parse(raw));
-      }
+      const locais = await localService.getAll();
+      setBackendLocals(locais);
+
+      // Converter para formato LocationData
+      const locationsData: LocationData[] = locais.map((local) => ({
+        id: local.id.toString(),
+        name: local.local_nome,
+        city: local.local_cidade,
+        address: local.local_endereco,
+        number: local.local_numero,
+        state: local.estado?.estado_nome || "",
+        icon: "home", // default
+        tariff: local.tarifa?.tarifa_valor || 0.92,
+      }));
+
+      setLocations(locationsData);
     } catch (error) {
-      console.log("No locations found, starting fresh");
+      console.error("Erro ao carregar locais:", error);
+      alert(
+        `Erro ao carregar locais: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
+      );
     }
   };
 
@@ -126,10 +311,19 @@ const RelatorioEnergia = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
   const [selectedAppliances, setSelectedAppliances] = useState<string[]>([]);
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [appliances, setAppliances] = useState<Appliance[]>(
-    currentLocation?.appliances || []
-  );
+  const [appliances, setAppliances] = useState<Appliance[]>([]);
+  const [isLoadingAppliances, setIsLoadingAppliances] = useState(false);
+
+  // Backend statistics state
+  const [stats, setStats] = useState<ReportStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  // Monthly history state
+  const [monthlyHistory, setMonthlyHistory] = useState<MonthlyHistory[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const [newAppliance, setNewAppliance] = useState<Omit<Appliance, "id">>({
     name: "",
@@ -139,20 +333,17 @@ const RelatorioEnergia = () => {
     material: "",
     carbonFootprint: 0,
     efficiency: "",
-    category: "Geladeira",
+    category: "",
   });
 
-  const [newLocation, setNewLocation] = useState<
-    Omit<LocationData, "id" | "appliances">
-  >({
+  const [newLocation, setNewLocation] = useState({
     name: "",
-    icon: "home",
-    cep: "",
+    icon: "home" as "home" | "apartment" | "business",
     city: "",
-    state: "São Paulo",
+    state_id: "",
     address: "",
     number: "",
-    tariff: 0.92,
+    tariff_value: 0,
   });
 
   // view mode for appliances: 'cards' (default) or 'list' (table)
@@ -166,63 +357,159 @@ const RelatorioEnergia = () => {
     if (selectedLocationId) {
       const loc = locations.find((l) => l.id === selectedLocationId) || null;
       setEditLocation(loc ? { ...loc } : null);
-      // keep appliances in sync when a new location is selected
-      if (loc) setAppliances(loc.appliances || []);
       setReportTab("report");
+
+      // Load appliances and stats from backend for this location
+      loadAppliances(selectedLocationId);
+      fetchStats(selectedLocationId);
+      fetchMonthlyHistory(selectedLocationId);
     } else {
       setEditLocation(null);
+      setAppliances([]);
+      setStats(null);
+      setMonthlyHistory([]);
     }
   }, [selectedLocationId, locations]);
 
-  useEffect(() => {
-    if (currentLocation) {
-      setAppliances(currentLocation.appliances);
-    }
-  }, [selectedLocationId]);
-
-  useEffect(() => {
-    if (currentLocation && currentView === "report") {
-      const updatedLocations = locations.map((loc) =>
-        loc.id === selectedLocationId ? { ...loc, appliances } : loc
+  const loadAppliances = async (locationId: string) => {
+    try {
+      setIsLoadingAppliances(true);
+      const eletros = await eletroService.getByLocal(locationId);
+      const mappedAppliances = eletros.map(eletroToAppliance);
+      setAppliances(mappedAppliances);
+    } catch (error) {
+      console.error("Erro ao carregar eletrodomésticos:", error);
+      alert(
+        `Erro ao carregar eletrodomésticos: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
       );
-      saveLocations(updatedLocations);
+      setAppliances([]);
+    } finally {
+      setIsLoadingAppliances(false);
     }
-  }, [appliances]);
+  };
 
-  const createLocation = () => {
-    if (!newLocation.name || !newLocation.city || !newLocation.address) {
+  const fetchStats = async (locationId: string) => {
+    try {
+      setIsLoadingStats(true);
+      setStatsError(null);
+      const data = await reportService.getLocationStats(locationId);
+      setStats(data);
+    } catch (error) {
+      console.error("Erro ao carregar estatísticas:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      setStatsError(errorMessage);
+      alert(`Erro ao carregar estatísticas: ${errorMessage}`);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
+  const fetchMonthlyHistory = async (locationId: string) => {
+    try {
+      setIsLoadingHistory(true);
+      const data = await reportService.getMonthlyHistory(locationId);
+      setMonthlyHistory(data);
+    } catch (error) {
+      console.error("Erro ao carregar histórico mensal:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      alert(`Erro ao carregar histórico mensal: ${errorMessage}`);
+      setMonthlyHistory([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const createLocation = async () => {
+    if (
+      !newLocation.name ||
+      !newLocation.city ||
+      !newLocation.address ||
+      !newLocation.state_id ||
+      !newLocation.tariff_value
+    ) {
       alert("Por favor, preencha todos os campos obrigatórios");
       return;
     }
 
-    const newLoc: LocationData = {
-      id: Date.now().toString(),
-      ...newLocation,
-      appliances: [],
-    };
+    try {
+      // Primeiro, criar a tarifa
+      const tarifaCreated = await tarifaService.create(
+        newLocation.tariff_value
+      );
 
-    const updatedLocations = [...locations, newLoc];
-    saveLocations(updatedLocations);
-    setIsLocationModalOpen(false);
-    setNewLocation({
-      name: "",
-      icon: "home",
-      cep: "",
-      city: "",
-      state: "São Paulo",
-      address: "",
-      number: "",
-      tariff: 0.92,
-    });
+      console.log("Tarifa criada:", tarifaCreated);
+      console.log("tarifa_id:", tarifaCreated.tarifa_id);
+      console.log(
+        "Objeto completo da tarifa:",
+        JSON.stringify(tarifaCreated, null, 2)
+      );
+
+      if (!tarifaCreated || !tarifaCreated.tarifa_id) {
+        throw new Error(
+          `Tarifa criada mas sem ID válido. Resposta: ${JSON.stringify(
+            tarifaCreated
+          )}`
+        );
+      }
+
+      // Depois, criar o local com a tarifa_id
+      const localCreated = await localService.create({
+        local_nome: newLocation.name,
+        local_cidade: newLocation.city,
+        local_endereco: newLocation.address,
+        local_numero: newLocation.number,
+        estado_id: parseInt(newLocation.state_id),
+        tarifa_id: tarifaCreated.tarifa_id,
+      });
+
+      // Recarregar a lista de locais
+      await loadLocations();
+
+      setIsLocationModalOpen(false);
+      setNewLocation({
+        name: "",
+        icon: "home",
+        city: "",
+        state_id: "",
+        address: "",
+        number: "",
+        tariff_value: 0,
+      });
+
+      alert("Local criado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao criar local:", error);
+      alert(
+        `Erro ao criar local: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
+      );
+    }
   };
 
-  const deleteLocation = (id: string) => {
+  const deleteLocation = async (id: string) => {
     if (confirm("Deseja realmente excluir este local?")) {
-      const updatedLocations = locations.filter((loc) => loc.id !== id);
-      saveLocations(updatedLocations);
-      if (selectedLocationId === id) {
-        setSelectedLocationId(null);
-        setCurrentView("locations");
+      try {
+        await localService.delete(parseInt(id));
+        await loadLocations();
+
+        if (selectedLocationId === id) {
+          setSelectedLocationId(null);
+          setCurrentView("locations");
+        }
+
+        alert("Local excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir local:", error);
+        alert(
+          `Erro ao excluir local: ${
+            error instanceof Error ? error.message : "Erro desconhecido"
+          }`
+        );
       }
     }
   };
@@ -244,7 +531,7 @@ const RelatorioEnergia = () => {
         tariff: 0.92,
       };
 
-  const addAppliance = () => {
+  const addAppliance = async () => {
     if (
       !newAppliance.name ||
       newAppliance.power <= 0 ||
@@ -254,29 +541,120 @@ const RelatorioEnergia = () => {
       return;
     }
 
-    const newId = (
-      Math.max(...appliances.map((a) => parseInt(a.id)), 0) + 1
-    ).toString();
-    setAppliances([...appliances, { ...newAppliance, id: newId }]);
-    setIsModalOpen(false);
-    setNewAppliance({
-      name: "",
-      room: "Cozinha",
-      power: 0,
-      hoursPerDay: 0,
-      material: "",
-      carbonFootprint: 0,
-      efficiency: "A",
-    });
-  };
+    if (!selectedLocationId) {
+      alert("Nenhum local selecionado");
+      return;
+    }
 
-  const removeAppliance = (id: string) => {
-    if (confirm("Deseja realmente remover este eletrodoméstico?")) {
-      setAppliances(appliances.filter((a) => a.id !== id));
+    if (!newAppliance.room || !newAppliance.category) {
+      alert("Por favor, selecione o cômodo e a categoria");
+      return;
+    }
+
+    try {
+      const comodo = availableRooms.find(
+        (r) => r.comodo_nome === newAppliance.room
+      );
+      const categoria = categories.find(
+        (c) => c.categoria_nome === newAppliance.category
+      );
+
+      if (!comodo || !categoria) {
+        alert("Cômodo ou categoria inválidos");
+        return;
+      }
+
+      const createRequest = {
+        categoria_id: categoria.categoria_id,
+        comodo_id: comodo.comodo_id,
+        local_id: parseInt(selectedLocationId),
+        eletro_nome: newAppliance.name,
+        eletro_potencia: newAppliance.power,
+        eletro_hrs_uso_dia: newAppliance.hoursPerDay,
+      };
+
+      const created = await eletroService.create(createRequest);
+
+      if (selectedLocationId) {
+        await Promise.all([
+          loadAppliances(selectedLocationId),
+          fetchStats(selectedLocationId),
+          fetchMonthlyHistory(selectedLocationId)
+        ]);
+      }
+
+      setIsModalOpen(false);
+      setNewAppliance({
+        name: "",
+        room: availableRooms[0]?.comodo_nome || "Cozinha",
+        power: 0,
+        hoursPerDay: 0,
+        material: "",
+        carbonFootprint: 0,
+        efficiency: "A",
+        category: categories[0]?.categoria_nome || "",
+      });
+
+      alert("Eletrodoméstico adicionado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao adicionar eletrodoméstico:", error);
+      alert(
+        `Erro ao adicionar eletrodoméstico: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
+      );
     }
   };
 
-  const rooms = ["all", ...Array.from(new Set(appliances.map((a) => a.room)))];
+  const removeAppliance = async (id: string) => {
+    if (!confirm("Deseja realmente remover este eletrodoméstico?")) {
+      return;
+    }
+
+    try {
+      await eletroService.delete(id);
+      setAppliances(appliances.filter((a) => a.id !== id));
+
+      // Reload stats from backend
+      if (selectedLocationId) {
+        await fetchStats(selectedLocationId);
+      }
+
+      alert("Eletrodoméstico removido com sucesso!");
+    } catch (error) {
+      console.error("Erro ao remover eletrodoméstico:", error);
+      alert(
+        `Erro ao remover eletrodoméstico: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`
+      );
+    }
+  };
+
+  const roomNames = [
+    "all",
+    ...Array.from(new Set(appliances.map((a) => a.room))),
+  ];
+
+  // Agrupar eletrodomésticos por categoria
+  const appliancesByCategory = useMemo(() => {
+    const grouped = new Map<string, Appliance[]>();
+
+    // Filtrar por cômodo primeiro
+    let appliancesToGroup = appliances;
+    if (selectedRoom !== "all") {
+      appliancesToGroup = appliances.filter((a) => a.room === selectedRoom);
+    }
+
+    appliancesToGroup.forEach((appliance) => {
+      const category = appliance.category || "Sem Categoria";
+      if (!grouped.has(category)) {
+        grouped.set(category, []);
+      }
+      grouped.get(category)!.push(appliance);
+    });
+    return grouped;
+  }, [appliances, selectedRoom]);
 
   const filteredAppliances = useMemo(() => {
     let filtered = appliances;
@@ -289,79 +667,81 @@ const RelatorioEnergia = () => {
     return filtered;
   }, [selectedRoom, selectedAppliances, appliances]);
 
-  const stats = useMemo(() => {
+  const consumptionByRoom = useMemo(() => {
+    const roomConsumption = new Map<string, number>();
+
+    filteredAppliances.forEach((appliance) => {
+      const room = appliance.room;
+      const consumption = (appliance.power * appliance.hoursPerDay * 30) / 1000; // kWh/mês
+      roomConsumption.set(room, (roomConsumption.get(room) || 0) + consumption);
+    });
+
+    return Array.from(roomConsumption.entries()).map(([name, consumo]) => ({
+      name,
+      consumo,
+    }));
+  }, [filteredAppliances]);
+
+  // Use monthly history from backend
+  const monthlyTrend = useMemo(() => {
+    return monthlyHistory.map((item) => ({
+      mes: item.mes,
+      consumo: item.consumo,
+      custo: item.custo,
+      emissao: item.co2,
+    }));
+  }, [monthlyHistory]);
+
+  // Estatísticas filtradas baseadas nos eletrodomésticos filtrados
+  const filteredStats = useMemo(() => {
     const monthlyConsumption = filteredAppliances.reduce(
       (sum, a) => sum + (a.power * a.hoursPerDay * 30) / 1000,
       0
     );
-    const monthlyCost = monthlyConsumption * location.tariff;
-    const totalCarbon = filteredAppliances.reduce(
-      (sum, a) => sum + a.carbonFootprint,
-      0
-    );
+    const monthlyCost = monthlyConsumption * (location.tariff || 0.92);
+    const monthlyCO2 = monthlyConsumption * 0.0817; // fator de emissão médio
+    const avgEfficiency =
+      filteredAppliances.length > 0
+        ? filteredAppliances.reduce((sum, a) => {
+            const effMap: Record<string, number> = {
+              "A+": 100,
+              A: 85,
+              B: 70,
+              C: 55,
+              D: 40,
+              E: 25,
+            };
+            return sum + (effMap[a.efficiency] || 50);
+          }, 0) / filteredAppliances.length
+        : 0;
 
-    return {
-      monthlyConsumption: monthlyConsumption.toFixed(2),
-      monthlyCost: monthlyCost.toFixed(2),
-      totalCarbon: totalCarbon.toFixed(2),
-      avgEfficiency:
-        filteredAppliances.length > 0
-          ? (
-              (filteredAppliances.filter((a) =>
-                ["A", "A+", "A++"].includes(a.efficiency)
-              ).length /
-                filteredAppliances.length) *
-              100
-            ).toFixed(0)
-          : "0",
-    };
+    return { monthlyConsumption, monthlyCost, monthlyCO2, avgEfficiency };
   }, [filteredAppliances, location.tariff]);
 
-  const consumptionByRoom = useMemo(() => {
-    const byRoom: { [key: string]: number } = {};
-    filteredAppliances.forEach((a) => {
-      if (!byRoom[a.room]) byRoom[a.room] = 0;
-      byRoom[a.room] += (a.power * a.hoursPerDay * 30) / 1000;
-    });
-    return Object.entries(byRoom).map(([name, value]) => ({
-      name,
-      consumo: parseFloat(value.toFixed(2)),
-    }));
-  }, [filteredAppliances]);
-
-  const monthlyTrend = [
-    { mes: "Jun", consumo: 245, custo: 225 },
-    { mes: "Jul", consumo: 268, custo: 247 },
-    { mes: "Ago", consumo: 253, custo: 233 },
-    { mes: "Set", consumo: 271, custo: 249 },
-    {
-      mes: "Out",
-      consumo: parseFloat(stats.monthlyConsumption),
-      custo: parseFloat(stats.monthlyCost),
-    },
-  ];
-
-  const efficiencyData = [
-    {
-      name: "Eficientes (A/A+)",
-      value: filteredAppliances.filter((a) =>
-        ["A", "A+", "A++"].includes(a.efficiency)
-      ).length,
-      color: "#10b981",
-    },
-    {
-      name: "Moderados (B)",
-      value: filteredAppliances.filter((a) => a.efficiency === "B").length,
-      color: "#f59e0b",
-    },
-    {
-      name: "Ineficientes (C/D)",
-      value: filteredAppliances.filter((a) =>
-        ["C", "D", "E"].includes(a.efficiency)
-      ).length,
-      color: "#ef4444",
-    },
-  ];
+  const efficiencyData = useMemo(
+    () => [
+      {
+        name: "Eficientes (A/A+)",
+        value: filteredAppliances.filter((a) =>
+          ["A", "A+", "A++"].includes(a.efficiency)
+        ).length,
+        color: "#10b981",
+      },
+      {
+        name: "Moderados (B)",
+        value: filteredAppliances.filter((a) => a.efficiency === "B").length,
+        color: "#f59e0b",
+      },
+      {
+        name: "Ineficientes (C/D)",
+        value: filteredAppliances.filter((a) =>
+          ["C", "D", "E"].includes(a.efficiency)
+        ).length,
+        color: "#ef4444",
+      },
+    ],
+    [filteredAppliances]
+  );
 
   // Savings simulator state and logic
   const [simApplianceId, setSimApplianceId] = useState<string>(
@@ -441,6 +821,26 @@ const RelatorioEnergia = () => {
     setSelectedAppliances((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
+  };
+
+  const toggleCategory = (category: string) => {
+    setOpenCategories((prev) => {
+      const newSet = new Set<string>();
+
+      if (!prev.has(category)) {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  const clearFilters = () => {
+    setSelectedAppliances([]);
+  };
+
+  const hasSelectedFromCategory = (category: string) => {
+    const categoryAppliances = appliancesByCategory.get(category) || [];
+    return categoryAppliances.some((a) => selectedAppliances.includes(a.id));
   };
 
   // exportReport removed — exporting handled elsewhere or not needed
@@ -534,25 +934,11 @@ const RelatorioEnergia = () => {
                         <p>
                           {loc.address}, {loc.number}
                         </p>
-                        {loc.cep && (
-                          <p className="text-slate-500">CEP: {loc.cep}</p>
-                        )}
                       </div>
                     </div>
 
                     <div className="pt-3 border-t border-slate-100">
                       <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
-                          <Zap size={16} className="text-emerald-600" />
-                          <span className="text-sm text-slate-600">
-                            Eletrodomésticos
-                          </span>
-                        </div>
-                        <span className="text-lg font-bold text-emerald-600">
-                          {loc.appliances.length}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <DollarSign size={16} className="text-blue-600" />
                           <span className="text-sm text-slate-600">Tarifa</span>
@@ -754,27 +1140,23 @@ const RelatorioEnergia = () => {
                         Estado *
                       </label>
                       <select
-                        value={newLocation.state}
+                        value={newLocation.state_id}
                         onChange={(e) =>
                           setNewLocation({
                             ...newLocation,
-                            state: e.target.value,
+                            state_id: e.target.value,
                           })
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       >
-                        <option value="São Paulo">São Paulo</option>
-                        <option value="Rio de Janeiro">Rio de Janeiro</option>
-                        <option value="Minas Gerais">Minas Gerais</option>
-                        <option value="Bahia">Bahia</option>
-                        <option value="Paraná">Paraná</option>
-                        <option value="Santa Catarina">Santa Catarina</option>
-                        <option value="Rio Grande do Sul">
-                          Rio Grande do Sul
-                        </option>
+                        <option value="">Selecione um estado</option>
+                        {states.map((state) => (
+                          <option key={state.id} value={state.id}>
+                            {state.estado_nome} - ({state.estado_uf})
+                          </option>
+                        ))}
                       </select>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Cidade *
@@ -795,15 +1177,15 @@ const RelatorioEnergia = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Tarifa de Energia (R$/kWh)
+                        Tarifa de Energia (R$/kWh) *
                       </label>
                       <input
                         type="number"
-                        value={newLocation.tariff}
+                        value={newLocation.tariff_value}
                         onChange={(e) =>
                           setNewLocation({
                             ...newLocation,
-                            tariff: parseFloat(e.target.value) || 0,
+                            tariff_value: parseFloat(e.target.value) || 0,
                           })
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -945,7 +1327,7 @@ const RelatorioEnergia = () => {
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="all">Todos os cômodos</option>
-                {rooms.slice(1).map((room) => (
+                {roomNames.slice(1).map((room) => (
                   <option key={room} value={room}>
                     {room}
                   </option>
@@ -957,22 +1339,109 @@ const RelatorioEnergia = () => {
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Categorias de Eletrodomésticos
               </label>
+
+              {/* Botão Todos */}
+              <button
+                onClick={clearFilters}
+                className={`px-3 py-1 rounded-full text-sm transition-colors mb-3 ${
+                  selectedAppliances.length === 0
+                    ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-500"
+                    : "bg-slate-100 text-slate-600 border-2 border-transparent hover:bg-slate-200"
+                }`}
+              >
+                Todos ({appliances.length})
+              </button>
+
               <div className="flex flex-wrap gap-2">
-                {appliances.map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => toggleAppliance(a.id)}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                      selectedAppliances.includes(a.id) ||
-                      selectedAppliances.length === 0
-                        ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-500"
-                        : "bg-slate-100 text-slate-400 border-2 border-transparent"
-                    }`}
-                  >
-                    {a.name}
-                  </button>
-                ))}
+                {Array.from(appliancesByCategory.entries()).map(
+                  ([category, items]) => (
+                    <div key={category} className="relative">
+                      {/* Botão da Categoria */}
+                      <button
+                        onClick={() => toggleCategory(category)}
+                        className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-2 transition-all ${
+                          openCategories.has(category)
+                            ? "bg-emerald-500 text-white shadow-md"
+                            : hasSelectedFromCategory(category)
+                            ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-500"
+                            : "bg-slate-100 text-slate-600 border-2 border-transparent hover:bg-slate-200"
+                        }`}
+                      >
+                        {category}
+                        <span
+                          className={`text-xs ${
+                            openCategories.has(category)
+                              ? "text-emerald-100"
+                              : "text-slate-500"
+                          }`}
+                        >
+                          ({items.length})
+                        </span>
+                        <svg
+                          className={`w-3 h-3 transition-transform duration-200 ${
+                            openCategories.has(category) ? "rotate-180" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+
+                      {/* Dropdown */}
+                      {openCategories.has(category) && (
+                        <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-slate-200 p-2 z-20 min-w-[240px] max-h-[300px] overflow-y-auto">
+                          {items.map((appliance) => (
+                            <label
+                              key={appliance.id}
+                              className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer group"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedAppliances.includes(
+                                  appliance.id
+                                )}
+                                onChange={() => toggleAppliance(appliance.id)}
+                                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600"
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm text-slate-700 font-medium group-hover:text-emerald-600">
+                                  {appliance.name}
+                                </span>
+                              </div>
+                              <span className="text-xs text-slate-400">
+                                {appliance.power}W
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
+
+              {/* Indicador de filtros ativos */}
+              {selectedAppliances.length > 0 && (
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  <span className="text-slate-600">
+                    <strong>{selectedAppliances.length}</strong>{" "}
+                    eletrodoméstico(s) filtrado(s)
+                  </span>
+                  <button
+                    onClick={clearFilters}
+                    className="text-emerald-600 hover:text-emerald-700 hover:underline font-medium"
+                  >
+                    Limpar filtros
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -984,8 +1453,12 @@ const RelatorioEnergia = () => {
               <Zap size={24} />
               <span className="text-emerald-100 text-sm">kWh</span>
             </div>
-            <p className="text-3xl font-bold">{stats.monthlyConsumption}</p>
-            <p className="text-emerald-100 text-sm mt-1">Consumo Mensal</p>
+            <p className="text-3xl font-bold">
+              {filteredStats.monthlyConsumption.toFixed(2)}
+            </p>
+            <p className="text-emerald-100 text-sm mt-1">
+              Consumo Mensal (Filtrado)
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
@@ -993,8 +1466,12 @@ const RelatorioEnergia = () => {
               <DollarSign size={24} />
               <span className="text-blue-100 text-sm">BRL</span>
             </div>
-            <p className="text-3xl font-bold">R$ {stats.monthlyCost}</p>
-            <p className="text-blue-100 text-sm mt-1">Custo Estimado</p>
+            <p className="text-3xl font-bold">
+              R$ {filteredStats.monthlyCost.toFixed(2)}
+            </p>
+            <p className="text-blue-100 text-sm mt-1">
+              Custo Estimado (Filtrado)
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
@@ -1002,8 +1479,12 @@ const RelatorioEnergia = () => {
               <Leaf size={24} />
               <span className="text-orange-100 text-sm">kg CO₂</span>
             </div>
-            <p className="text-3xl font-bold">{stats.totalCarbon}</p>
-            <p className="text-orange-100 text-sm mt-1">Emissão de Carbono</p>
+            <p className="text-3xl font-bold">
+              {filteredStats.monthlyCO2.toFixed(2)}
+            </p>
+            <p className="text-orange-100 text-sm mt-1">
+              Emissão CO₂ (Filtrado)
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
@@ -1011,8 +1492,12 @@ const RelatorioEnergia = () => {
               <TrendingUp size={24} />
               <span className="text-purple-100 text-sm">%</span>
             </div>
-            <p className="text-3xl font-bold">{stats.avgEfficiency}%</p>
-            <p className="text-purple-100 text-sm mt-1">Eficiência Média</p>
+            <p className="text-3xl font-bold">
+              {filteredStats.avgEfficiency.toFixed(0)}%
+            </p>
+            <p className="text-purple-100 text-sm mt-1">
+              Eficiência Média (Filtrado)
+            </p>
           </div>
         </div>
 
@@ -1051,6 +1536,7 @@ const RelatorioEnergia = () => {
                   dataKey="consumo"
                   stroke="#10b981"
                   strokeWidth={2}
+                  name="Consumo (kWh)"
                 />
                 <Line
                   yAxisId="right"
@@ -1058,6 +1544,15 @@ const RelatorioEnergia = () => {
                   dataKey="custo"
                   stroke="#3b82f6"
                   strokeWidth={2}
+                  name="Custo (R$)"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="emissao"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  name="CO₂ (kg)"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -1290,13 +1785,11 @@ const RelatorioEnergia = () => {
                       }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="Cozinha">Cozinha</option>
-                      <option value="Sala">Sala</option>
-                      <option value="Quarto">Quarto</option>
-                      <option value="Banheiro">Banheiro</option>
-                      <option value="Área de Serviço">Área de Serviço</option>
-                      <option value="Escritório">Escritório</option>
-                      <option value="Garagem">Garagem</option>
+                      {availableRooms.map((room) => (
+                        <option key={room.comodo_id} value={room.comodo_nome}>
+                          {room.comodo_nome}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1354,34 +1847,15 @@ const RelatorioEnergia = () => {
                       }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="Geladeira">Geladeira</option>
-                      <option value="Freezer">Freezer</option>
-                      <option value="Fogão elétrico">Fogão elétrico</option>
-                      <option value="Micro-ondas">Micro-ondas</option>
-                      <option value="Lavadora">Lavadora</option>
-                      <option value="Secadora">Secadora</option>
-                      <option value="Ar-condicionado">Ar-condicionado</option>
-                      <option value="Outro">Outro</option>
+                      {categories.map((category) => (
+                        <option
+                          key={category.categoria_id}
+                          value={category.categoria_nome}
+                        >
+                          {category.categoria_nome}
+                        </option>
+                      ))}
                     </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Emissão CO₂ (kg/ano)
-                    </label>
-                    <input
-                      type="number"
-                      value={newAppliance.carbonFootprint || ""}
-                      onChange={(e) =>
-                        setNewAppliance({
-                          ...newAppliance,
-                          carbonFootprint: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: 450"
-                      min="0"
-                    />
                   </div>
                 </div>
 
@@ -1510,6 +1984,13 @@ const RelatorioEnergia = () => {
                             kWh
                           </span>
                         </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Emissão (CO₂):</span>
+                          <span className="font-medium text-red-600">
+                            {Number(appliance.carbonFootprint).toFixed(2)}{" "}
+                            kg/ano
+                          </span>
+                        </div>
                         <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                           <span className="text-slate-600">Eficiência:</span>
                           <span
@@ -1568,7 +2049,7 @@ const RelatorioEnergia = () => {
                         Consumo Mensal
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                        Material
+                        Emissão CO₂
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                         Eficiência
@@ -1602,7 +2083,7 @@ const RelatorioEnergia = () => {
                             kWh
                           </td>
                           <td className="px-4 py-3 text-sm text-slate-600">
-                            {a.material}
+                            {Number(a.carbonFootprint).toFixed(2)} kg/ano
                           </td>
                           <td className="px-4 py-3">
                             <span

@@ -4,22 +4,60 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\EletroController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\EstadoController;
+use App\Http\Controllers\LocalController;
+use App\Http\Controllers\ComodoController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\TarifaController;
+use App\Http\Controllers\HistoricoConsumoController;
 
-// Public routes (no authentication required)
+// Rotas Públicas (sem autenticação)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes (JWT authentication required)
+// Rotas Protegidas (autenticação JWT necessária)
 Route::middleware('auth:api')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
-    
-    // User CRUD routes
+
+    // CRUD usuários
     Route::apiResource('users', UserController::class);
+
+    // CRUD eletrodomésticos
+    Route::apiResource('eletros', EletroController::class);
     
-    // Original route (now using JWT instead of Sanctum)
+    // rotas comodos
+    Route::apiResource('comodos', ComodoController::class)-> only(['index', 'show']);
+
+    //rotas categorias
+    Route::apiResource('categorias', CategoriaController::class)-> only(['index', 'show']);
+
+    // Rota para obter as classificações de eficiência do eletrodoméstico
+    Route::get('/classificacoes', function() {
+        return response()->json(Eletro::CLASSIFICACOES);
+    });
+
+    // Rotas para estados
+    Route::apiResource('estados', EstadoController::class)->only(['index', 'show']);
+
+    // Rotas para locais
+    Route::apiResource('locais', LocalController::class);
+    
+    // Rotas para tarifas
+    Route::apiResource('tarifas', TarifaController::class);
+    
+    // Rotas de relatórios
+    Route::get('/reports/consumption/{locationId}', [ReportController::class, 'getConsumption']);
+    
+    // Rotas de histórico de consumo mensal
+    Route::get('/locais/{id}/historico-mensal', [HistoricoConsumoController::class, 'getHistoricoLocal']);
+    Route::post('/locais/{id}/consolidar-historico', [HistoricoConsumoController::class, 'consolidarHistorico']);
+    
+    // Rota original (com JWT ao invés de sanctum)
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
