@@ -7,7 +7,10 @@ export const ContentCarousel = () => {
       id: 1,
       title: "Escolhas Inteligentes Começam Aqui!",
       description: "Compare. Economize. Cuide do planeta.",
-      gradient: "from-blue-600/20 to-cyan-600/20",
+      // vivid solid radial green: center uses var(--foreground) and edges a slightly darker tone,
+      // center expanded to 70% for less contrast
+      gradient:
+        "bg-[radial-gradient(circle_at_center,_var(--foreground)_0%,_var(--foreground)_70%,_#2f6f4f_100%)]",
       content: (
         <div>
           O Heny ajuda você a comparar eletrodomésticos considerando consumo de
@@ -15,13 +18,14 @@ export const ContentCarousel = () => {
           economia — é consciência.
         </div>
       ),
-      image: "/GeladeirasComparadas.jpg",
+      image: undefined,
     },
     {
       id: 2,
       title: "Sustentabilidade ao Alcance de um Clique",
       description: "Eficiência energética nunca foi tão fácil de entender.",
-      gradient: "from-blue-600/20 to-cyan-600/20",
+      gradient:
+        "bg-[radial-gradient(circle_at_center,_var(--foreground)_0%,_var(--foreground)_70%,_#2f6f4f_100%)]",
       content: (
         <div>
           Com o Heny, você não precisa mais adivinhar qual produto é mais
@@ -32,20 +36,21 @@ export const ContentCarousel = () => {
           ajuda o planeta.
         </div>
       ),
-      image: "/GreenPrint.png",
+      image: undefined,
     },
     {
       id: 3,
       title: "Tecnologia que Transforma Consumo em Consciente.",
       description: "Escolher bem é o primeiro passo para um futuro melhor.",
-      gradient: "from-blue-600/20 to-cyan-600/20",
+      gradient:
+        "bg-[radial-gradient(circle_at_center,_var(--foreground)_0%,_var(--foreground)_70%,_#2f6f4f_100%)]",
       content: (
         <div>
           O Heny une tecnologia e sustentabilidade para tornar cada compra uma
           decisão inteligente — para você e para o planeta.
         </div>
       ),
-      image: "/Floresta.jpg",
+      image: undefined,
     },
   ];
 

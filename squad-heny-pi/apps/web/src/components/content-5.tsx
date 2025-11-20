@@ -21,11 +21,9 @@ export default function ContentSection() {
           </p>
         </div>
         <img
-          className="rounded-(--radius)"
+          className="rounded-[var(--radius)]"
           src="/Comparacoes.gif"
-          alt="team image"
-          height=""
-          width=""
+          alt="Comparações"
           loading="lazy"
         />
 

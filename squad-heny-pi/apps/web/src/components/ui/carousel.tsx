@@ -26,7 +26,9 @@ const defaultSlides: CarouselSlide[] = [
     title: "Gestão Inteligente de Energia",
     description:
       "Monitore e otimize o consumo energético dos seus eletrodomésticos com relatórios detalhados e insights em tempo real.",
-    gradient: "from-purple-600/20 to-pink-600/20",
+    // vivid solid radial green background (center expanded for softer edge)
+    gradient:
+      "bg-[radial-gradient(circle_at_center,_var(--foreground)_0%,_var(--foreground)_70%,_#2f6f4f_100%)]",
     image: undefined,
   },
   {
@@ -34,7 +36,8 @@ const defaultSlides: CarouselSlide[] = [
     title: "Economia Sustentável",
     description:
       "Reduza suas contas de energia e minimize seu impacto ambiental com nossas ferramentas de análise e comparação.",
-    gradient: "from-blue-600/20 to-cyan-600/20",
+    gradient:
+      "bg-[radial-gradient(circle_at_center,_var(--foreground)_0%,_var(--foreground)_70%,_#2f6f4f_100%)]",
     image: undefined,
   },
   {
@@ -42,7 +45,8 @@ const defaultSlides: CarouselSlide[] = [
     title: "Relatórios Personalizados",
     description:
       "Acesse relatórios detalhados sobre consumo, custos e impactos ambientais, tudo em uma interface intuitiva.",
-    gradient: "from-green-600/20 to-emerald-600/20",
+    gradient:
+      "bg-[radial-gradient(circle_at_center,_var(--foreground)_0%,_var(--foreground)_70%,_#2f6f4f_100%)]",
     image: undefined,
   },
   {
@@ -50,7 +54,8 @@ const defaultSlides: CarouselSlide[] = [
     title: "Conscientização Ambiental",
     description:
       "Entenda o impacto real do seu consumo energético e tome decisões mais conscientes para um futuro sustentável.",
-    gradient: "from-yellow-600/20 to-orange-600/20",
+    gradient:
+      "bg-[radial-gradient(circle_at_center,_var(--foreground)_0%,_var(--foreground)_70%,_#2f6f4f_100%)]",
     image: undefined,
   },
 ];
@@ -132,11 +137,12 @@ export function LiquidGlassCarousel({
                   />
                 )}
 
-                {/* Gradient overlay */}
+                {/* Gradient overlay (slide.gradient can be a full bg class, e.g. radial) */}
                 <div
                   className={cn(
-                    "absolute inset-0 bg-gradient-to-br opacity-30 z-10",
-                    slide.gradient || "from-purple-600/20 to-pink-600/20"
+                    "absolute inset-0 z-10",
+                    slide.gradient ||
+                      "bg-gradient-to-br from-purple-600/20 to-pink-600/20"
                   )}
                 />
 

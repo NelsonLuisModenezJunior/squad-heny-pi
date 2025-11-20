@@ -33,7 +33,7 @@ export default function HeroSection() {
       <HeroHeader />
       <main className="relative overflow-hidden min-h-screen">
         {/* Imagem de fundo cobrindo toda a tela */}
-        <div className="absolute inset-0 -z-20 h-[90vh]">
+        <div className="absolute inset-0 -z-20 h-[130vh]">
           <Image
             src="/home.jpg"
             alt="background"
@@ -150,7 +150,7 @@ export default function HeroSection() {
             </div>
 
             {/* Seção adicional opcional - você pode remover se quiser apenas o hero com fundo */}
-            <div className="mt-32 mx-auto max-w-7xl px-6">
+            <div className="mt-16 mx-auto max-w-7xl px-6">
               <AnimatedGroup
                 variants={{
                   container: {
