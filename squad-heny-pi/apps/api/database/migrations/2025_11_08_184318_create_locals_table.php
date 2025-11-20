@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('locals', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('local_nome', 255);
             $table->string('local_cidade', 255);
             $table->string('local_endereco', 255);
             $table->string('local_numero', 7);
-            $table->text('local_desc', 255);
             $table->foreignId('estado_id')->constrained('estados');
+            $table->unsignedBigInteger('tarifa_id');
+            $table->foreign('tarifa_id')->references('tarifa_id')->on('tarifas')->onDelete('cascade');
             $table->timestamps();
         });
     }

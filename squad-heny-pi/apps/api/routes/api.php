@@ -10,6 +10,8 @@ use App\Http\Controllers\EstadoController;
 use App\Http\Controllers\LocalController;
 use App\Http\Controllers\ComodoController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\TarifaController;
+use App\Http\Controllers\HistoricoConsumoController;
 
 // Rotas Públicas (sem autenticação)
 Route::post('/register', [AuthController::class, 'register']);
@@ -45,8 +47,15 @@ Route::middleware('auth:api')->group(function () {
     // Rotas para locais
     Route::apiResource('locais', LocalController::class);
     
+    // Rotas para tarifas
+    Route::apiResource('tarifas', TarifaController::class);
+    
     // Rotas de relatórios
     Route::get('/reports/consumption/{locationId}', [ReportController::class, 'getConsumption']);
+    
+    // Rotas de histórico de consumo mensal
+    Route::get('/locais/{id}/historico-mensal', [HistoricoConsumoController::class, 'getHistoricoLocal']);
+    Route::post('/locais/{id}/consolidar-historico', [HistoricoConsumoController::class, 'consolidarHistorico']);
     
     // Rota original (com JWT ao invés de sanctum)
     Route::get('/user', function (Request $request) {

@@ -160,21 +160,37 @@ class EficienciaService
     /**
      * Calculate estimated monthly cost
      * 
-     * @param float $tarifaKwh Average electricity rate in R$/kWh (default: R$ 0.85)
+     * @param Eletro $eletro
      */
-    public function calcularCustoMensal(Eletro $eletro, float $tarifaKwh = 0.85): float
+    public function calcularCustoMensal(Eletro $eletro): float
     {
+        $tarifaKwh = $this->getTarifaValor($eletro);
         return round($this->calcularConsumoKwhMes($eletro) * $tarifaKwh, 2);
     }
     
     /**
      * Calculate estimated annual cost
-     * 
-     * @param float $tarifaKwh Average electricity rate in R$/kWh (default: R$ 0.85)
      */
-    public function calcularCustoAnual(Eletro $eletro, float $tarifaKwh = 0.85): float
+    public function calcularCustoAnual(Eletro $eletro): float
     {
+        $tarifaKwh = $this->getTarifaValor($eletro);
         return round($this->calcularConsumoKwhAno($eletro) * $tarifaKwh, 2);
+    }
+    
+    /**
+     * Get tarifa value from eletro's local
+     * 
+     * @param Eletro $eletro
+     * @return float
+     * @throws \Exception if tarifa is not found
+     */
+    private function getTarifaValor(Eletro $eletro): float
+    {
+        if (!$eletro->local || !$eletro->local->tarifa) {
+            throw new \Exception('Tarifa não encontrada para este eletrodoméstico');
+        }
+        
+        return (float) $eletro->local->tarifa->tarifa_valor;
     }
 
     /**
@@ -191,11 +207,10 @@ class EficienciaService
      * Calculate total monthly cost for a collection of appliances
      * 
      * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
-     * @param float $tarifaKwh Electricity rate in R$/kWh
      */
-    public function calcularCustoTotalMes($eletros, float $tarifaKwh): float
+    public function calcularCustoTotalMes($eletros): float
     {
-        return round($eletros->sum(fn($eletro) => $this->calcularCustoMensal($eletro, $tarifaKwh)), 2);
+        return round($eletros->sum(fn($eletro) => $this->calcularCustoMensal($eletro)), 2);
     }
 
     /**
@@ -269,6 +284,35 @@ class EficienciaService
     }
 
     /**
+     * Calculate weighted average efficiency based on classification
+     * 
+     * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
+     * @return float Weighted average efficiency (0-100)
+     */
+    public function calcularEficienciaMediaPonderada($eletros): float
+    {
+        if ($eletros->isEmpty()) {
+            return 0;
+        }
+        
+        $pesos = [
+            'A+' => 100,
+            'A' => 85,
+            'B' => 70,
+            'C' => 55,
+            'D' => 40,
+            'E' => 25
+        ];
+        
+        $somaEficiencia = $eletros->sum(function($eletro) use ($pesos) {
+            $classificacao = $this->calcularClassificacao($eletro);
+            return $pesos[$classificacao] ?? 0;
+        });
+        
+        return round($somaEficiencia / $eletros->count(), 2);
+    }
+
+    /**
      * Calculate total annual CO2 emissions for a collection of appliances
      * 
      * @param \Illuminate\Support\Collection $eletros Collection of Eletro models
@@ -283,7 +327,9 @@ class EficienciaService
             return round($eletro->eletro_emissao_co2_anual, 2);
         }
         
-        $emissao = round($this->calcularConsumoKwhAno($eletro) * ($eletro->eletro_emissao ?? 0.5), 2);
+        $fatorEmissao = 0.0817; // kg CO2/kWh
+        
+        $emissao = round($this->calcularConsumoKwhAno($eletro) * $fatorEmissao, 2);
         $eletro->eletro_emissao_co2_anual = $emissao;
         $eletro->save();
         
@@ -301,5 +347,12 @@ class EficienciaService
         return round($eletros->sum(function ($eletro) {
             return $this->calcularEmissaoCO2Anual($eletro);
         }), 2);
+    }
+
+    public function calcularEmissaoCO2Mensal($eletros): float
+    {
+        $fatorEmissao = 0.0817; // kg CO2/kWh
+        $consumoMensal = $this->calcularConsumoTotalMes($eletros);
+        return round($consumoMensal * $fatorEmissao, 2);
     }
 }

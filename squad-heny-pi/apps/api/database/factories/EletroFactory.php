@@ -27,10 +27,9 @@ class EletroFactory extends Factory
 
         return [
             'categoria_id' => Categoria::factory(),
+            'comodo_id' => \App\Models\Comodo::factory(),
             'eletro_nome' => fake()->randomElement($eletrodomesticos) . ' ' . fake()->word(),
-            'eletro_emissao' => fake()->randomFloat(2, 0.5, 999.99),
             'eletro_potencia' => fake()->randomFloat(2, 100, 3000),
-            'eletro_dt_criado' => fake()->dateTimeBetween('-1 year', 'now'),
             'eletro_hrs_uso_dia' => fake()->numberBetween(1, 24),
             'eletro_mensal_kwh' => fake()->randomFloat(2, 1, 500),
             'eletro_anual_kwh' => fake()->randomFloat(2, 12, 6000),

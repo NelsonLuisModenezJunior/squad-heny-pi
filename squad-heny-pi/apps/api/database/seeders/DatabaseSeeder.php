@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ComodoSeeder::class,
             CategoriaSeeder::class,
             EstadoSeeder::class,
+            // HistoricoConsumoMensalSeeder::class, //rode esse cara para popular o historico
         ]);
 
         User::factory()->create([

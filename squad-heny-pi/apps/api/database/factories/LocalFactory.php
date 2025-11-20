@@ -21,8 +21,8 @@ class LocalFactory extends Factory
             'local_cidade' => fake()->city(),
             'local_endereco' => fake()->streetAddress(),
             'local_numero' => fake()->buildingNumber(),
-            'local_desc' => fake()->sentence(),
-            'estado_id' => fake()->numberBetween(1, 27)
+            'estado_id' => fake()->numberBetween(1, 27),
+            'tarifa_id' => fake()->numberBetween(1, 5)
         ];
     }
 }
