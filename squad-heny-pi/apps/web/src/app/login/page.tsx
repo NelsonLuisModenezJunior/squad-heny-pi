@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import {
@@ -10,6 +10,7 @@ import {
   FaLock,
   FaUser,
   FaEnvelope,
+  FaArrowLeft,
 } from "react-icons/fa";
 
 interface AuthResponse {
@@ -34,6 +35,15 @@ export default function Login() {
   const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isActive, setIsActive] = useState(false);
+  const router = useRouter();
+
+  const handleGoBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+    } else {
+      router.push("/");
+    }
+  };
 
   const handleLogin = async () => {
     try {
@@ -186,6 +196,16 @@ export default function Login() {
 
       <div className="absolute inset-0 -z-10 backdrop-blur-[3px]" />
 
+
+      <button
+        onClick={handleGoBack}
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 text-white bg-white/20 hover:bg-white/30 border border-white/50 px-4 py-2 rounded-lg transition-all hover:scale-110 active:scale-95 backdrop-blur-sm"
+        aria-label="Voltar"
+      >
+        <FaArrowLeft className="w-4 h-4" />
+        <span className="text-sm font-semibold">Voltar</span>
+      </button>
+
       <div className="mb-8 z-10 logo-pulse">
         <h1 className="text-5xl font-bold text-white drop-shadow-lg">H[ENY]</h1>
       </div>
@@ -197,7 +217,6 @@ export default function Login() {
             "0 25px 80px rgba(0,0,0,0.4), inset 0 0 25px rgba(255,255,255,0.05)",
         }}
       >
-        {/* Login */}
         <div
           className={`absolute top-0 left-0 w-1/2 h-full transition-transform duration-600 ease-in-out z-20 ${
             isActive ? "translate-x-full" : ""
@@ -238,7 +257,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Registro */}
         <div
           className={`absolute top-0 left-0 w-1/2 h-full transition-all duration-600 ease-in-out ${
             isActive ? "translate-x-full opacity-100 z-50" : "opacity-0 z-10"
@@ -299,7 +317,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Painel alternância */}
         <div
           className={`absolute top-0 left-1/2 w-1/2 h-full transition-transform duration-800 ease-in-out ${
             isActive ? "-translate-x-full" : ""
