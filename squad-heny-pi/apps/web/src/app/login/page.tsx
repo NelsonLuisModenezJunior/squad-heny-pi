@@ -62,14 +62,18 @@ function LoginContent() {
         password,
       });
       const token = response.data.authorization?.token;
-      if (token) {
+      const user = response.data.user;
+      if (token && user) {
         localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
         showToast({
           title: "Login realizado",
           description: "Login realizado com sucesso!",
           variant: "success",
         });
-        window.location.href = "/";
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 4000);
       }
     } catch (err) {
       showToast({
