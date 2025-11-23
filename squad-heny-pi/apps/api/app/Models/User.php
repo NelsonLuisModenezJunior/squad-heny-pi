@@ -65,4 +65,12 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    /**
+     * Get the locals that belong to the user.
+     */
+    public function locals()
+    {
+        return $this->hasMany(Local::class);
+    }
 }
