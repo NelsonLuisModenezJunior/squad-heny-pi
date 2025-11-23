@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { AlertProvider, useAlert } from "@/components/ui";
 import {
   FaGoogle,
   FaInstagram,
@@ -29,14 +28,6 @@ interface AuthResponse {
 }
 
 export default function Login() {
-  return (
-    <AlertProvider>
-      <LoginContent />
-    </AlertProvider>
-  );
-}
-
-function LoginContent() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [registerName, setRegisterName] = useState("");
@@ -45,7 +36,6 @@ function LoginContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isActive, setIsActive] = useState(false);
   const router = useRouter();
-  const { showToast } = useAlert();
 
   const handleGoBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -66,31 +56,19 @@ function LoginContent() {
       if (token && user) {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
-        showToast({
-          title: "Login realizado",
-          description: "Login realizado com sucesso!",
-          variant: "success",
-        });
+        alert("Login realizado com sucesso!");
         setTimeout(() => {
           window.location.href = "/";
-        }, 4000);
+        }, 1000);
       }
-    } catch (err) {
-      showToast({
-        title: "Credenciais inválidas",
-        description: "Verifique email e senha.",
-        variant: "error",
-      });
+    } catch {
+      alert("Credenciais inválidas!");
     }
   };
 
   const handleRegister = async () => {
     if (registerPassword !== confirmPassword) {
-      showToast({
-        title: "Senhas diferentes",
-        description: "As senhas não coincidem!",
-        variant: "warning",
-      });
+      alert("As senhas não coincidem!");
       return;
     }
 
@@ -103,19 +81,11 @@ function LoginContent() {
       const token = response.data.authorization?.token;
       if (token) {
         localStorage.setItem("token", token);
-        showToast({
-          title: "Conta criada",
-          description: "Conta criada com sucesso!",
-          variant: "success",
-        });
+        alert("Conta criada com sucesso!");
         window.location.href = "/";
       }
-    } catch (err) {
-      showToast({
-        title: "Erro ao registrar",
-        description: "Erro ao registrar usuário.",
-        variant: "error",
-      });
+    } catch {
+      alert("Erro ao registrar!");
     }
   };
 
@@ -229,6 +199,7 @@ function LoginContent() {
       </div>
 
       <div className="absolute inset-0 -z-10 backdrop-blur-[3px]" />
+
 
       <button
         onClick={handleGoBack}
