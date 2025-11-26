@@ -36,6 +36,7 @@ import {
   Building2,
   Briefcase,
   ArrowLeft,
+  SquarePen,
 } from "lucide-react";
 import { localService, type Local } from "../../services/localService";
 import { tarifaService } from "../../services/tarifaService";
@@ -126,6 +127,17 @@ const RelatorioEnergia = () => {
     null
   );
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isEditLocationModalOpen, setIsEditLocationModalOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<{
+    id: string;
+    name: string;
+    icon: "home" | "apartment" | "business";
+    city: string;
+    state_id: string;
+    address: string;
+    number: string;
+    tariff_value: number;
+  } | null>(null);
   const [reportName, setReportName] = useState(
     `Relatório de ${new Date().toLocaleDateString("pt-BR")}`
   );
@@ -134,6 +146,16 @@ const RelatorioEnergia = () => {
   const [selectedAppliances, setSelectedAppliances] = useState<string[]>([]);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditApplianceModalOpen, setIsEditApplianceModalOpen] =
+    useState(false);
+  const [editingAppliance, setEditingAppliance] = useState<{
+    id: string;
+    name: string;
+    room: string;
+    power: number;
+    hoursPerDay: number;
+    category: string;
+  } | null>(null);
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [isLoadingAppliances, setIsLoadingAppliances] = useState(false);
   const [stats, setStats] = useState<ReportStats | null>(null);
@@ -518,6 +540,61 @@ const RelatorioEnergia = () => {
     );
   };
 
+  const openEditLocationModal = (locId: string) => {
+    const loc = locations.find((l) => l.id === locId);
+    const backendLocal = backendLocals.find((l) => l.id.toString() === locId);
+
+    if (loc && backendLocal) {
+      setEditingLocation({
+        id: locId,
+        name: loc.name,
+        icon: loc.icon,
+        city: loc.city,
+        state_id: backendLocal.estado_id?.toString() || "",
+        address: loc.address,
+        number: loc.number,
+        tariff_value: loc.tariff,
+      });
+      setIsEditLocationModalOpen(true);
+    }
+  };
+
+  const updateLocation = async () => {
+    if (!editingLocation) return;
+
+    if (
+      !editingLocation.name ||
+      !editingLocation.city ||
+      !editingLocation.address ||
+      !editingLocation.state_id
+    ) {
+      toast.warning("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
+    try {
+      await localService.update(parseInt(editingLocation.id), {
+        local_nome: editingLocation.name,
+        local_cidade: editingLocation.city,
+        local_endereco: editingLocation.address,
+        local_numero: editingLocation.number,
+        estado_id: parseInt(editingLocation.state_id),
+      });
+
+      await loadLocations();
+
+      setIsEditLocationModalOpen(false);
+      setEditingLocation(null);
+
+      toast.success("Local atualizado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar local:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error(`Erro ao atualizar local: ${errorMessage}`);
+    }
+  };
+
   const selectLocation = (id: string) => {
     setSelectedLocationId(id);
     setCurrentView("report");
@@ -631,6 +708,76 @@ const RelatorioEnergia = () => {
         }
       }
     );
+  };
+
+  const openEditApplianceModal = (applianceId: string) => {
+    const appliance = appliances.find((a) => a.id === applianceId);
+
+    if (appliance) {
+      setEditingAppliance({
+        id: applianceId,
+        name: appliance.name,
+        room: appliance.room,
+        power: appliance.power,
+        hoursPerDay: appliance.hoursPerDay,
+        category: appliance.category,
+      });
+      setIsEditApplianceModalOpen(true);
+    }
+  };
+
+  const updateAppliance = async () => {
+    if (!editingAppliance) return;
+
+    if (
+      !editingAppliance.name ||
+      editingAppliance.power <= 0 ||
+      editingAppliance.hoursPerDay <= 0
+    ) {
+      toast.warning("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
+    try {
+      const comodo = availableRooms.find(
+        (r) => r.comodo_nome === editingAppliance.room
+      );
+      const categoria = categories.find(
+        (c) => c.categoria_nome === editingAppliance.category
+      );
+
+      if (!comodo || !categoria) {
+        toast.error("Cômodo ou categoria inválidos");
+        return;
+      }
+
+      await eletroService.update(editingAppliance.id, {
+        eletro_nome: editingAppliance.name,
+        eletro_potencia: editingAppliance.power,
+        eletro_hrs_uso_dia: editingAppliance.hoursPerDay,
+        comodo_id: comodo.comodo_id,
+        categoria_id: categoria.categoria_id,
+      });
+
+      // Recarregar dados
+      if (selectedLocationId) {
+        await Promise.all([
+          loadAppliances(selectedLocationId),
+          fetchStats(selectedLocationId),
+          fetchMonthlyHistory(selectedLocationId),
+        ]);
+      }
+
+      setIsEditApplianceModalOpen(false);
+      setEditingAppliance(null);
+
+      toast.success("Eletrodoméstico atualizado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar eletrodoméstico:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error(`Erro ao atualizar eletrodoméstico: ${errorMessage}`);
+    }
   };
 
   const roomNames = [
@@ -908,15 +1055,26 @@ const RelatorioEnergia = () => {
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteLocation(loc.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-all duration-200"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditLocationModal(loc.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-all duration-200"
+                        >
+                          <SquarePen size={18} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteLocation(loc.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-all duration-200"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1241,6 +1399,279 @@ const RelatorioEnergia = () => {
                       className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg font-medium"
                     >
                       Criar Local
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Location Modal */}
+          {isEditLocationModalOpen && editingLocation && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-white">
+                    Editar Local
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setIsEditLocationModalOpen(false);
+                      setEditingLocation(null);
+                    }}
+                    className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  {/* Location Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Nome do Local *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLocation.name}
+                      onChange={(e) =>
+                        setEditingLocation({
+                          ...editingLocation,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ex: Minha Casa, Apartamento Centro, Empresa XYZ"
+                    />
+                  </div>
+
+                  {/* Location Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                      Tipo de Local *
+                    </label>
+                    <div className="grid grid-cols-3 gap-4">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            icon: "home",
+                          })
+                        }
+                        className={`p-6 rounded-xl border-2 transition-all ${
+                          editingLocation.icon === "home"
+                            ? "border-emerald-500 bg-emerald-50 shadow-lg"
+                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Home
+                          size={40}
+                          className={`mx-auto mb-3 ${
+                            editingLocation.icon === "home"
+                              ? "text-emerald-600"
+                              : "text-slate-400"
+                          }`}
+                        />
+                        <p
+                          className={`text-sm font-semibold ${
+                            editingLocation.icon === "home"
+                              ? "text-emerald-600"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          Casa
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            icon: "apartment",
+                          })
+                        }
+                        className={`p-6 rounded-xl border-2 transition-all ${
+                          editingLocation.icon === "apartment"
+                            ? "border-blue-500 bg-blue-50 shadow-lg"
+                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Building2
+                          size={40}
+                          className={`mx-auto mb-3 ${
+                            editingLocation.icon === "apartment"
+                              ? "text-blue-600"
+                              : "text-slate-400"
+                          }`}
+                        />
+                        <p
+                          className={`text-sm font-semibold ${
+                            editingLocation.icon === "apartment"
+                              ? "text-blue-600"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          Apartamento
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            icon: "business",
+                          })
+                        }
+                        className={`p-6 rounded-xl border-2 transition-all ${
+                          editingLocation.icon === "business"
+                            ? "border-purple-500 bg-purple-50 shadow-lg"
+                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Briefcase
+                          size={40}
+                          className={`mx-auto mb-3 ${
+                            editingLocation.icon === "business"
+                              ? "text-purple-600"
+                              : "text-slate-400"
+                          }`}
+                        />
+                        <p
+                          className={`text-sm font-semibold ${
+                            editingLocation.icon === "business"
+                              ? "text-purple-600"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          Empresa
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Address Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Estado *
+                      </label>
+                      <select
+                        value={editingLocation.state_id}
+                        onChange={(e) =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            state_id: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Selecione um estado</option>
+                        {states.map((state) => (
+                          <option key={state.id} value={state.id}>
+                            {state.estado_nome} - ({state.estado_uf})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Cidade *
+                      </label>
+                      <input
+                        type="text"
+                        value={editingLocation.city}
+                        onChange={(e) =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            city: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ex: Campinas"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Tarifa de Energia (R$/kWh)
+                      </label>
+                      <input
+                        type="number"
+                        value={editingLocation.tariff_value}
+                        onChange={(e) =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            tariff_value: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-100"
+                        placeholder="0.92"
+                        step="0.01"
+                        min="0"
+                        disabled
+                        title="Para alterar a tarifa, edite diretamente no cadastro de tarifas"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        A tarifa não pode ser alterada por aqui
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Endereço *
+                      </label>
+                      <input
+                        type="text"
+                        value={editingLocation.address}
+                        onChange={(e) =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            address: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ex: Rua das Flores"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Número *
+                      </label>
+                      <input
+                        type="text"
+                        value={editingLocation.number}
+                        onChange={(e) =>
+                          setEditingLocation({
+                            ...editingLocation,
+                            number: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="123"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end gap-3 pt-6 border-t border-slate-200">
+                    <button
+                      onClick={() => {
+                        setIsEditLocationModalOpen(false);
+                        setEditingLocation(null);
+                      }}
+                      className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={updateLocation}
+                      className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg font-medium"
+                    >
+                      Salvar Alterações
                     </button>
                   </div>
                 </div>
@@ -1733,13 +2164,13 @@ const RelatorioEnergia = () => {
         {isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-slate-800">
+              <div className="sticky top-0 bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-white">
                   Adicionar Eletrodoméstico
                 </h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
                 >
                   <X size={24} />
                 </button>
@@ -1853,8 +2284,8 @@ const RelatorioEnergia = () => {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-emerald-600">
                     <strong>Consumo Estimado:</strong>{" "}
                     {newAppliance.power && newAppliance.hoursPerDay
                       ? `${(
@@ -1874,9 +2305,172 @@ const RelatorioEnergia = () => {
                   </button>
                   <button
                     onClick={addAppliance}
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg font-medium"
+                  >
+                    Criar Eletrodoméstico
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Editar Eletrodoméstico */}
+        {isEditApplianceModalOpen && editingAppliance && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-white">
+                  Editar Eletrodoméstico
+                </h2>
+                <button
+                  onClick={() => {
+                    setIsEditApplianceModalOpen(false);
+                    setEditingAppliance(null);
+                  }}
+                  className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Nome do Eletrodoméstico *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingAppliance.name}
+                      onChange={(e) =>
+                        setEditingAppliance({
+                          ...editingAppliance,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ex: Geladeira"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Cômodo *
+                    </label>
+                    <select
+                      value={editingAppliance.room}
+                      onChange={(e) =>
+                        setEditingAppliance({
+                          ...editingAppliance,
+                          room: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {availableRooms.map((room) => (
+                        <option key={room.comodo_id} value={room.comodo_nome}>
+                          {room.comodo_nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Potência (Watts) *
+                    </label>
+                    <input
+                      type="number"
+                      value={editingAppliance.power || ""}
+                      onChange={(e) =>
+                        setEditingAppliance({
+                          ...editingAppliance,
+                          power: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ex: 150"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Horas de Uso por Dia *
+                    </label>
+                    <input
+                      type="number"
+                      value={editingAppliance.hoursPerDay || ""}
+                      onChange={(e) =>
+                        setEditingAppliance({
+                          ...editingAppliance,
+                          hoursPerDay: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ex: 8"
+                      min="0"
+                      max="24"
+                      step="0.1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Categoria
+                    </label>
+                    <select
+                      value={editingAppliance.category}
+                      onChange={(e) =>
+                        setEditingAppliance({
+                          ...editingAppliance,
+                          category: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {categories.map((category) => (
+                        <option
+                          key={category.categoria_id}
+                          value={category.categoria_nome}
+                        >
+                          {category.categoria_nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Consumo Estimado:</strong>{" "}
+                    {editingAppliance.power && editingAppliance.hoursPerDay
+                      ? `${(
+                          (editingAppliance.power *
+                            editingAppliance.hoursPerDay *
+                            30) /
+                          1000
+                        ).toFixed(2)} kWh/mês`
+                      : "-- kWh/mês"}
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+                  <button
+                    onClick={() => {
+                      setIsEditApplianceModalOpen(false);
+                      setEditingAppliance(null);
+                    }}
+                    className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={updateAppliance}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Adicionar Eletrodoméstico
+                    Salvar Alterações
                   </button>
                 </div>
               </div>
@@ -1947,12 +2541,20 @@ const RelatorioEnergia = () => {
                             {appliance.room}
                           </p>
                         </div>
-                        <button
-                          onClick={() => removeAppliance(appliance.id)}
-                          className="text-red-400 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEditApplianceModal(appliance.id)}
+                            className="text-slate-400 hover:text-slate-600 transition-colors"
+                          >
+                            <SquarePen size={18} />
+                          </button>
+                          <button
+                            onClick={() => removeAppliance(appliance.id)}
+                            className="text-red-400 hover:text-red-600 transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-2 text-sm">
@@ -2093,12 +2695,20 @@ const RelatorioEnergia = () => {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => removeAppliance(a.id)}
-                              className="text-red-500 hover:text-red-700 font-medium"
-                            >
-                              Remover
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => openEditApplianceModal(a.id)}
+                                className="text-slate-500 hover:text-slate-700 font-medium"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => removeAppliance(a.id)}
+                                className="text-red-500 hover:text-red-700 font-medium"
+                              >
+                                Remover
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
