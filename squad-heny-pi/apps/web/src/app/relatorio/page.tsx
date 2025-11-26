@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
+import { useAlert } from "@/hooks/useAlert";
+import { useAuth } from "@/hooks/useAuth";
 import { HeroHeader } from "../../components/header";
 import {
   BarChart,
@@ -108,9 +110,72 @@ function eletroToAppliance(eletro: Eletro): Appliance {
 }
 
 const RelatorioEnergia = () => {
+  const { toast, dialog } = useAlert();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Declare ALL states BEFORE the guard
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [states, setStates] = useState<Estado[]>([]);
+  const [currentView, setCurrentView] = useState<"locations" | "report">(
+    "locations"
+  );
+  const [locations, setLocations] = useState<LocationData[]>([]);
+  const [backendLocals, setBackendLocals] = useState<Local[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
+    null
+  );
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [reportName, setReportName] = useState(
+    `Relatório de ${new Date().toLocaleDateString("pt-BR")}`
+  );
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<string>("all");
+  const [selectedAppliances, setSelectedAppliances] = useState<string[]>([]);
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [appliances, setAppliances] = useState<Appliance[]>([]);
+  const [isLoadingAppliances, setIsLoadingAppliances] = useState(false);
+  const [stats, setStats] = useState<ReportStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [monthlyHistory, setMonthlyHistory] = useState<MonthlyHistory[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [newAppliance, setNewAppliance] = useState<Omit<Appliance, "id">>({
+    name: "",
+    room: "Cozinha",
+    power: 0,
+    hoursPerDay: 0,
+    material: "",
+    carbonFootprint: 0,
+    efficiency: "",
+    category: "",
+  });
+  const [newLocation, setNewLocation] = useState({
+    name: "",
+    icon: "home" as "home" | "apartment" | "business",
+    city: "",
+    state_id: "",
+    address: "",
+    number: "",
+    tariff_value: 0,
+  });
+  const [applianceView, setApplianceView] = useState<"cards" | "list">("cards");
+  const [reportTab, setReportTab] = useState<"report" | "edit">("report");
+  const [editLocation, setEditLocation] = useState<LocationData | null>(null);
+  const [simApplianceId, setSimApplianceId] = useState<string>("");
+  const [simHours, setSimHours] = useState<number>(0);
+  const [simTariff, setSimTariff] = useState<number>(0.92);
+  const [simReplacement, setSimReplacement] = useState<"A+" | "A++">("A+");
+  const [simResult, setSimResult] = useState<{
+    currentKwh: number;
+    newKwh: number;
+    savingsKwh: number;
+    monthlySavings: number;
+    annualSavings: number;
+  } | null>(null);
+  const [loggedUser, setLoggedUser] = useState<string | null>(null);
+
   // Buscar estados
   useEffect(() => {
     const fetchStates = async () => {
@@ -243,16 +308,6 @@ const RelatorioEnergia = () => {
     }
   }, [availableRooms, categories]);
 
-  const [currentView, setCurrentView] = useState<"locations" | "report">(
-    "locations"
-  );
-  const [locations, setLocations] = useState<LocationData[]>([]);
-  const [backendLocals, setBackendLocals] = useState<Local[]>([]);
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
-    null
-  );
-  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-
   useEffect(() => {
     loadLocations();
   }, []);
@@ -277,11 +332,9 @@ const RelatorioEnergia = () => {
       setLocations(locationsData);
     } catch (error) {
       console.error("Erro ao carregar locais:", error);
-      alert(
-        `Erro ao carregar locais: ${
-          error instanceof Error ? error.message : "Erro desconhecido"
-        }`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error(`Erro ao carregar locais: ${errorMessage}`);
     }
   };
 
@@ -305,54 +358,7 @@ const RelatorioEnergia = () => {
     (loc) => loc.id === selectedLocationId
   );
 
-  const [reportName, setReportName] = useState(
-    `Relatório de ${new Date().toLocaleDateString("pt-BR")}`
-  );
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<string>("all");
-  const [selectedAppliances, setSelectedAppliances] = useState<string[]>([]);
-  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [appliances, setAppliances] = useState<Appliance[]>([]);
-  const [isLoadingAppliances, setIsLoadingAppliances] = useState(false);
-
-  // Backend statistics state
-  const [stats, setStats] = useState<ReportStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
-  const [statsError, setStatsError] = useState<string | null>(null);
-
-  // Monthly history state
-  const [monthlyHistory, setMonthlyHistory] = useState<MonthlyHistory[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-
-  const [newAppliance, setNewAppliance] = useState<Omit<Appliance, "id">>({
-    name: "",
-    room: "Cozinha",
-    power: 0,
-    hoursPerDay: 0,
-    material: "",
-    carbonFootprint: 0,
-    efficiency: "",
-    category: "",
-  });
-
-  const [newLocation, setNewLocation] = useState({
-    name: "",
-    icon: "home" as "home" | "apartment" | "business",
-    city: "",
-    state_id: "",
-    address: "",
-    number: "",
-    tariff_value: 0,
-  });
-
-  // view mode for appliances: 'cards' (default) or 'list' (table)
-  const [applianceView, setApplianceView] = useState<"cards" | "list">("cards");
-
-  // report sub-tab: 'report' (default) shows charts/lists, 'edit' shows edit-location form
-  const [reportTab, setReportTab] = useState<"report" | "edit">("report");
-  const [editLocation, setEditLocation] = useState<LocationData | null>(null);
-
+  // Buscar dados do backend quando localização é selecionada
   useEffect(() => {
     if (selectedLocationId) {
       const loc = locations.find((l) => l.id === selectedLocationId) || null;
@@ -379,11 +385,9 @@ const RelatorioEnergia = () => {
       setAppliances(mappedAppliances);
     } catch (error) {
       console.error("Erro ao carregar eletrodomésticos:", error);
-      alert(
-        `Erro ao carregar eletrodomésticos: ${
-          error instanceof Error ? error.message : "Erro desconhecido"
-        }`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error(`Erro ao carregar eletrodomésticos: ${errorMessage}`);
       setAppliances([]);
     } finally {
       setIsLoadingAppliances(false);
@@ -401,7 +405,7 @@ const RelatorioEnergia = () => {
       const errorMessage =
         error instanceof Error ? error.message : "Erro desconhecido";
       setStatsError(errorMessage);
-      alert(`Erro ao carregar estatísticas: ${errorMessage}`);
+      toast.error(`Erro ao carregar estatísticas: ${errorMessage}`);
     } finally {
       setIsLoadingStats(false);
     }
@@ -416,7 +420,7 @@ const RelatorioEnergia = () => {
       console.error("Erro ao carregar histórico mensal:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Erro desconhecido";
-      alert(`Erro ao carregar histórico mensal: ${errorMessage}`);
+      toast.error(`Erro ao carregar histórico mensal: ${errorMessage}`);
       setMonthlyHistory([]);
     } finally {
       setIsLoadingHistory(false);
@@ -431,7 +435,7 @@ const RelatorioEnergia = () => {
       !newLocation.state_id ||
       !newLocation.tariff_value
     ) {
-      alert("Por favor, preencha todos os campos obrigatórios");
+      toast.warning("Por favor, preencha todos os campos obrigatórios");
       return;
     }
 
@@ -480,38 +484,38 @@ const RelatorioEnergia = () => {
         tariff_value: 0,
       });
 
-      alert("Local criado com sucesso!");
+      toast.success("Local criado com sucesso!");
     } catch (error) {
       console.error("Erro ao criar local:", error);
-      alert(
-        `Erro ao criar local: ${
-          error instanceof Error ? error.message : "Erro desconhecido"
-        }`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error(`Erro ao criar local: ${errorMessage}`);
     }
   };
 
   const deleteLocation = async (id: string) => {
-    if (confirm("Deseja realmente excluir este local?")) {
-      try {
-        await localService.delete(parseInt(id));
-        await loadLocations();
+    dialog.confirm(
+      "Excluir Local",
+      "Deseja realmente excluir este local?",
+      async () => {
+        try {
+          await localService.delete(parseInt(id));
+          await loadLocations();
 
-        if (selectedLocationId === id) {
-          setSelectedLocationId(null);
-          setCurrentView("locations");
+          if (selectedLocationId === id) {
+            setSelectedLocationId(null);
+            setCurrentView("locations");
+          }
+
+          toast.success("Local excluído com sucesso!");
+        } catch (error) {
+          console.error("Erro ao excluir local:", error);
+          const errorMessage =
+            error instanceof Error ? error.message : "Erro desconhecido";
+          toast.error(`Erro ao excluir local: ${errorMessage}`);
         }
-
-        alert("Local excluído com sucesso!");
-      } catch (error) {
-        console.error("Erro ao excluir local:", error);
-        alert(
-          `Erro ao excluir local: ${
-            error instanceof Error ? error.message : "Erro desconhecido"
-          }`
-        );
       }
-    }
+    );
   };
 
   const selectLocation = (id: string) => {
@@ -537,17 +541,17 @@ const RelatorioEnergia = () => {
       newAppliance.power <= 0 ||
       newAppliance.hoursPerDay <= 0
     ) {
-      alert("Por favor, preencha todos os campos obrigatórios");
+      toast.warning("Por favor, preencha todos os campos obrigatórios");
       return;
     }
 
     if (!selectedLocationId) {
-      alert("Nenhum local selecionado");
+      toast.warning("Nenhum local selecionado");
       return;
     }
 
     if (!newAppliance.room || !newAppliance.category) {
-      alert("Por favor, selecione o cômodo e a categoria");
+      toast.warning("Por favor, selecione o cômodo e a categoria");
       return;
     }
 
@@ -560,7 +564,7 @@ const RelatorioEnergia = () => {
       );
 
       if (!comodo || !categoria) {
-        alert("Cômodo ou categoria inválidos");
+        toast.error("Cômodo ou categoria inválidos");
         return;
       }
 
@@ -579,7 +583,7 @@ const RelatorioEnergia = () => {
         await Promise.all([
           loadAppliances(selectedLocationId),
           fetchStats(selectedLocationId),
-          fetchMonthlyHistory(selectedLocationId)
+          fetchMonthlyHistory(selectedLocationId),
         ]);
       }
 
@@ -595,40 +599,38 @@ const RelatorioEnergia = () => {
         category: categories[0]?.categoria_nome || "",
       });
 
-      alert("Eletrodoméstico adicionado com sucesso!");
+      toast.success("Eletrodoméstico adicionado com sucesso!");
     } catch (error) {
       console.error("Erro ao adicionar eletrodoméstico:", error);
-      alert(
-        `Erro ao adicionar eletrodoméstico: ${
-          error instanceof Error ? error.message : "Erro desconhecido"
-        }`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      toast.error(`Erro ao adicionar eletrodoméstico: ${errorMessage}`);
     }
   };
 
   const removeAppliance = async (id: string) => {
-    if (!confirm("Deseja realmente remover este eletrodoméstico?")) {
-      return;
-    }
+    dialog.confirm(
+      "Remover Eletrodoméstico",
+      "Deseja realmente remover este eletrodoméstico?",
+      async () => {
+        try {
+          await eletroService.delete(id);
+          setAppliances(appliances.filter((a) => a.id !== id));
 
-    try {
-      await eletroService.delete(id);
-      setAppliances(appliances.filter((a) => a.id !== id));
+          // Reload stats from backend
+          if (selectedLocationId) {
+            await fetchStats(selectedLocationId);
+          }
 
-      // Reload stats from backend
-      if (selectedLocationId) {
-        await fetchStats(selectedLocationId);
+          toast.success("Eletrodoméstico removido com sucesso!");
+        } catch (error) {
+          console.error("Erro ao remover eletrodoméstico:", error);
+          const errorMessage =
+            error instanceof Error ? error.message : "Erro desconhecido";
+          toast.error(`Erro ao remover eletrodoméstico: ${errorMessage}`);
+        }
       }
-
-      alert("Eletrodoméstico removido com sucesso!");
-    } catch (error) {
-      console.error("Erro ao remover eletrodoméstico:", error);
-      alert(
-        `Erro ao remover eletrodoméstico: ${
-          error instanceof Error ? error.message : "Erro desconhecido"
-        }`
-      );
-    }
+    );
   };
 
   const roomNames = [
@@ -743,26 +745,6 @@ const RelatorioEnergia = () => {
     [filteredAppliances]
   );
 
-  // Savings simulator state and logic
-  const [simApplianceId, setSimApplianceId] = useState<string>(
-    filteredAppliances.length > 0 ? filteredAppliances[0].id : ""
-  );
-  const [simHours, setSimHours] = useState<number>(
-    filteredAppliances.length > 0 ? filteredAppliances[0].hoursPerDay : 0
-  );
-  const [simTariff, setSimTariff] = useState<number>(location.tariff || 0.92);
-  const [simReplacement, setSimReplacement] = useState<"A+" | "A++">("A+");
-  const [simResult, setSimResult] = useState<{
-    currentKwh: number;
-    newKwh: number;
-    savingsKwh: number;
-    monthlySavings: number;
-    annualSavings: number;
-  } | null>(null);
-
-  // logged user from localStorage (shown under report title)
-  const [loggedUser, setLoggedUser] = useState<string | null>(null);
-
   useEffect(() => {
     try {
       const raw = localStorage.getItem("user");
@@ -867,6 +849,18 @@ const RelatorioEnergia = () => {
         return "from-emerald-500 to-emerald-600";
     }
   };
+
+  // Guard: Se está carregando ou não autenticado, mostrar loading/bloquear acesso
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
+          <p className="text-slate-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   // LOCATIONS VIEW
   if (currentView === "locations") {

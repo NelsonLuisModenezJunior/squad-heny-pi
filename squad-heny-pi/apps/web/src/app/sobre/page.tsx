@@ -14,13 +14,13 @@ export default function AboutPage() {
     {
       name: "Nelson Junior",
       role: "Líder geral - Agilista/ Desenvolvedor Full-Stack",
-      image: "/team/nelson.jpg",
+      image: "/team/junior.png",
       desc: "Responsável pela estruturação, coordenação e acompanhamento das fases do projeto, garantindo a comunicação eficiente entre os membros e conduzindo o desenvolvimento Full-Stack com foco em qualidade e alinhamento das metas.",
     },
     {
       name: "Raoni",
       role: "Desenvolvedor Back-End",
-      image: "/team/raoni.jfif",
+      image: "/team/raoni.png",
       desc: "Desenvolvedor Back-End responsável pela estruturação de dados, serviços e processamento das informações do Heny. Atua no desenvolvimento de APIs e integração de dados das tarifas regionais.",
     },
     {
@@ -32,13 +32,13 @@ export default function AboutPage() {
     {
       name: "Lucas",
       role: "Desenvolvedor Full-Stack",
-      image: "/team/lucas.jfif",
+      image: "/team/lucas.png",
       desc: "Apoia equipes de Back-End e Front-End na construção das funcionalidades principais do sistema, contribuindo para garantir a integração entre as camadas e a consistência da plataforma.",
     },
     {
       name: "Nicolas",
       role: "Desenvolvedor Full-Stack",
-      image: "/team/nicolas.jfif",
+      image: "/team/nicolas.png",
       desc: "Desenvolvedor Full-Stack responsável por funcionalidades essenciais do sistema, atuando com foco em desempenho, integração e boas práticas.",
     },
   ];
