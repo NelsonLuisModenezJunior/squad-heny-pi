@@ -137,6 +137,7 @@ const RelatorioEnergia = () => {
     address: string;
     number: string;
     tariff_value: number;
+    tarifa_id: number | null;
   } | null>(null);
   const [reportName, setReportName] = useState(
     `Relatório de ${new Date().toLocaleDateString("pt-BR")}`
@@ -554,6 +555,7 @@ const RelatorioEnergia = () => {
         address: loc.address,
         number: loc.number,
         tariff_value: loc.tariff,
+        tarifa_id: backendLocal.tarifa_id || null,
       });
       setIsEditLocationModalOpen(true);
     }
@@ -573,6 +575,10 @@ const RelatorioEnergia = () => {
     }
 
     try {
+      if (editingLocation.tarifa_id && editingLocation.tariff_value > 0) {
+        await tarifaService.update(editingLocation.tarifa_id, editingLocation.tariff_value);
+      }
+
       await localService.update(parseInt(editingLocation.id), {
         local_nome: editingLocation.name,
         local_cidade: editingLocation.city,
@@ -1594,7 +1600,7 @@ const RelatorioEnergia = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Tarifa de Energia (R$/kWh)
+                        Tarifa de Energia (R$/kWh) *
                       </label>
                       <input
                         type="number"
@@ -1605,16 +1611,11 @@ const RelatorioEnergia = () => {
                             tariff_value: parseFloat(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-100"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0.92"
                         step="0.01"
                         min="0"
-                        disabled
-                        title="Para alterar a tarifa, edite diretamente no cadastro de tarifas"
                       />
-                      <p className="text-xs text-slate-500 mt-1">
-                        A tarifa não pode ser alterada por aqui
-                      </p>
                     </div>
                   </div>
 

@@ -72,6 +72,45 @@ class TarifaService {
 
     return response.json();
   }
+
+  async update(id: number, tarifa_valor: number): Promise<Tarifa> {
+    try {
+      console.log("Atualizando tarifa:", { id, tarifa_valor });
+
+      const response = await fetch(`${API_URL}/tarifas/${id}`, {
+        method: "PUT",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ tarifa_valor }),
+      });
+
+      console.log("Tarifa update - Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Tarifa update - Erro da API:", errorText);
+
+        let errorMessage;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || response.statusText;
+        } catch {
+          errorMessage = errorText || response.statusText;
+        }
+
+        throw new Error(`Erro ao atualizar tarifa: ${errorMessage}`);
+      }
+
+      const result = await response.json();
+      console.log("Tarifa atualizada com sucesso:", result);
+      return result;
+    } catch (error) {
+      console.error("Tarifa update - Erro ao fazer requisição:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Erro desconhecido ao atualizar tarifa");
+    }
+  }
 }
 
 export const tarifaService = new TarifaService();
