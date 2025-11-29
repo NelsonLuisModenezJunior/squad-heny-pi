@@ -67,41 +67,8 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden text-gray-900">
+    <div className="min-h-screen relative overflow-hidden text-gray-900 bg-white">
       <HeroHeader />
-
-      {/* FUNDO COM DEGRADÊ LARANJA/AMARELO + FORMAS GEOMÉTRICAS */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#F3A302] via-[#F3A302]/70 to-[#EBEBEB] -z-10" />
-
-      {/* Formas geométricas */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none -z-10 opacity-30">
-        <svg
-          className="absolute w-full h-full"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M0 300 Q300 350 600 300 T1200 300"
-            fill="none"
-            stroke="#FFFFFF"
-            strokeWidth="60"
-            opacity="0.3"
-          />
-          <path
-            d="M0 500 Q300 550 600 500 T1200 500"
-            fill="none"
-            stroke="#79BA92"
-            strokeWidth="40"
-            opacity="0.4"
-          />
-          <path
-            d="M0 700 Q300 750 600 700 T1200 700"
-            fill="none"
-            stroke="#51A471"
-            strokeWidth="30"
-            opacity="0.4"
-          />
-        </svg>
-      </div>
 
       <section className="relative max-w-7xl mx-auto px-6 pt-32 pb-24">
         {/* TÍTULO ANIMADO */}
@@ -111,10 +78,10 @@ export default function AboutPage() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center mb-20"
         >
-          <h1 className="text-6xl font-extrabold drop-shadow-md text-white">
+          <h1 className="text-6xl font-extrabold drop-shadow-md text-gray-900">
             Sobre o <span className="text-[#51A471]">Projeto Heny</span>
           </h1>
-          <p className="mt-4 text-xl text-white/90">
+          <p className="mt-4 text-xl text-gray-700">
             Um novo jeito de compreender consumo, tarifas e impacto ambiental.
           </p>
         </motion.div>
@@ -161,7 +128,7 @@ export default function AboutPage() {
         >
           {/* TEXTO */}
           <div className="space-y-6">
-            <h2 className="text-4xl font-bold text-white drop-shadow-md">
+            <h2 className="text-4xl font-bold text-gray-900 drop-shadow-md">
               Quem Somos
             </h2>
 
@@ -226,7 +193,7 @@ export default function AboutPage() {
         </motion.div>
 
         {/* LINHA DO TEMPO */}
-        <h2 className="text-5xl font-bold mt-32 mb-12 text-center text-white drop-shadow-lg">
+        <h2 className="text-5xl font-bold mt-32 mb-12 text-center text-gray-900 drop-shadow-lg">
           Nossa Jornada
         </h2>
 
@@ -270,7 +237,7 @@ export default function AboutPage() {
         </div>
 
         {/* TIME DO PROJETO */}
-        <h2 className="text-5xl font-bold mt-32 mb-12 text-center text-white drop-shadow-lg">
+        <h2 className="text-5xl font-bold mt-32 mb-12 text-center text-gray-900 drop-shadow-lg">
           Equipe Heny
         </h2>
 
@@ -325,48 +292,6 @@ export default function AboutPage() {
               >
                 {expandedMember === idx ? "- Menos" : "+ Mais"}
               </button>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* VALORES */}
-        <h2 className="text-5xl font-bold mt-32 mb-12 text-center text-white drop-shadow-lg">
-          Nossos Valores
-        </h2>
-
-        <div className="grid md:grid-cols-3 gap-8 mb-20">
-          {[
-            {
-              icon: Leaf,
-              title: "Sustentabilidade",
-              text: "Colocamos o meio ambiente no centro de todas as nossas decisões.",
-            },
-            {
-              icon: Zap,
-              title: "Inovação",
-              text: "Buscamos constantemente novas formas de resolver problemas ambientais.",
-            },
-            {
-              icon: Users,
-              title: "Colaboração",
-              text: "Acreditamos que juntos conseguimos gerar um impacto muito maior.",
-            },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.15, duration: 0.8 }}
-              viewport={{ once: true }}
-              className="group bg-white/60 backdrop-blur-xl border border-white/40 p-8 rounded-2xl shadow-lg hover:shadow-xl hover:bg-white/70 transition hover:scale-105"
-            >
-              <div className="text-4xl mb-4 transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">
-                <item.icon className="w-12 h-12 text-[#51A471]" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                {item.title}
-              </h3>
-              <p className="text-gray-800">{item.text}</p>
             </motion.div>
           ))}
         </div>
