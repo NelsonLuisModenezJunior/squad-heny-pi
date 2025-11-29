@@ -306,40 +306,18 @@ export default function ContentPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-           <div className="w-full h-full bg-gradient-to-br from-white/60 to-white/30 backdrop-blur-xl border border-white/40 rounded-3xl flex items-center justify-center">
-  <div className="text-center p-8">
-    {activeTab === 0 && (
-      <Image
-        src="/gif1.gif"
-        alt="gif 1"
-        width={160}
-        height={160}
-        className="mx-auto opacity-80"
-      />
-    )}
-
-    {activeTab === 1 && (
-      <Image
-        src="/gif2.gif"
-        alt="gif 2"
-        width={160}
-        height={160}
-        className="mx-auto opacity-80"
-      />
-    )}
-
-    {activeTab === 2 && (
-      <Image
-        src="/gif3.gif"
-        alt="gif 3"
-        width={160}
-        height={160}
-        className="mx-auto opacity-80"
-      />
-    )}
-  </div>
-</div>
-
+            <div className="w-full h-full bg-gradient-to-br from-white/60 to-white/30 backdrop-blur-xl border border-white/40 rounded-3xl flex items-center justify-center">
+              <div className="text-center p-8">
+                {activeTab === 0 && <TrendingUp className="w-24 h-24 text-[#F3A302] mx-auto opacity-50" />}
+                {activeTab === 1 && <Leaf className="w-24 h-24 text-[#51A471] mx-auto opacity-50" />}
+                {activeTab === 2 && <Zap className="w-24 h-24 text-[#79BA92] mx-auto opacity-50" />}
+                <p className="text-gray-700 font-semibold mt-4">Espaço para sua imagem</p>
+              </div>
+            </div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#F3A302] to-[#51A471] rounded-3xl blur opacity-0 group-hover:opacity-40 transition-opacity duration-300 -z-10" />
+          </motion.div>
+        </motion.div>
+      </section>
 
       {/* SEÇÃO 4: ACCORDION DE RECURSOS */}
       <section className="relative max-w-7xl mx-auto px-6 py-24">
