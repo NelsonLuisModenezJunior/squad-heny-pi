@@ -1,11 +1,9 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { TextEffect } from "@/components/ui/text-effect";
-import { AnimatedGroup } from "@/components/ui/animated-group";
-import { HeroHeader } from "./header";
 
 const transitionVariants = {
   item: {
@@ -30,172 +28,119 @@ const transitionVariants = {
 export default function HeroSection() {
   return (
     <>
-      <HeroHeader />
-      <main className="relative overflow-hidden min-h-screen">
-        {/* Imagem de fundo cobrindo toda a tela */}
-        <div className="absolute inset-0 -z-20 h-[130vh]">
-          <Image
-            src="/home.jpg"
-            alt="background"
-            fill
-            priority
-            className="object-cover blur-[5px]"
-            quality={100}
-          />
-          {/* Overlay escuro para melhorar a legibilidade do texto */}
-          <div className="absolute inset-0 bg-black/80 dark:bg-black/60" />
-          {/* Efeito de névoa/gradiente na parte inferior - similar ao original */}
-          <div className="mask-b-from-5 absolute inset-0" />
-          <div className="absolute inset-x-0 bottom-0 h-[3.5%] bg-gradient-to-t from-background via-background/80 to-transparent" />
+      <main className="relative overflow-hidden min-h-[90vh] h-[90vh] flex flex-col justify-center">
+        {/* Background com blur */}
+        <div className="absolute inset-0 -z-20">
+          <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#0d0d0d] to-[#000000]" />
+          <div className="absolute inset-0 bg-black/60" />
         </div>
 
-        {/* Gradientes decorativos (opcional - pode remover se preferir) */}
-        <div
-          aria-hidden
-          className="absolute inset-0 isolate hidden opacity-65 contain-strict lg:block"
-        >
-          <div className="w-140 h-320 -translate-y-87.5 absolute left-0 top-0 -rotate-45 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsla(0,0%,85%,.08)_0,hsla(0,0%,55%,.02)_50%,hsla(0,0%,45%,0)_80%)]" />
-          <div className="h-320 absolute left-0 top-0 w-60 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
-          <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-60 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
-        </div>
+        {/* Efeitos de iluminação animada - Cantos */}
+        <div className="absolute -top-1/2 -right-1/4 w-[800px] h-[800px] bg-gradient-radial from-[#F3A302]/20 via-[#F3A302]/5 to-transparent rounded-full blur-3xl animate-pulse -z-10" />
+        <div className="absolute -bottom-1/2 -left-1/4 w-[800px] h-[800px] bg-gradient-radial from-[#79BA92]/15 via-[#79BA92]/5 to-transparent rounded-full blur-3xl animate-pulse animation-delay-2000 -z-10" />
 
-        <section className="relative z-10">
-          <div className="relative pt-24 md:pt-36 pb-20">
-            <div className="mx-auto max-w-7xl px-6">
-              <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
-                <AnimatedGroup variants={transitionVariants}>
-                  <Link
-                    href="#link"
-                    className="hover:bg-background/90 dark:hover:border-t-border bg-white/90 dark:bg-black/50 backdrop-blur-md group mx-auto flex w-fit items-center gap-4 rounded-full border border-white/20 p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-white/10 dark:shadow-zinc-950"
-                  >
-                    <span className="text-foreground dark:text-white text-sm">
-                      Quer saber mais sobre o projeto e nosso propósito
+        {/* Animação de luz RGB */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-[#FF6B35] via-[#F3A302] to-[#FFD700] rounded-full blur-3xl opacity-0 animate-[pulse_4s_ease-in-out_infinite] -z-10" style={{ animationDelay: '0s' }} />
+        <div className="absolute bottom-40 left-20 w-80 h-80 bg-gradient-to-tr from-[#51A471] via-[#79BA92] to-[#A8D5BA] rounded-full blur-3xl opacity-0 animate-[pulse_4s_ease-in-out_infinite] -z-10" style={{ animationDelay: '1.3s' }} />
+
+        {/* Divisor superior com glassmorfismo */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#F3A302]/40 to-transparent" />
+
+        <section className="relative z-10 flex-1 flex flex-col justify-center">
+          <div className="mx-auto max-w-7xl px-6 w-full">
+            <div className="text-center">
+              {/* Badge com glassmorfismo */}
+              <div className="mx-auto mb-8 flex w-fit">
+                <Link
+                  href="#link"
+                  className="group bg-white/10 dark:bg-black/40 backdrop-blur-xl border border-white/20 hover:border-[#F3A302]/50 p-1 pl-4 pr-1 rounded-full shadow-lg hover:shadow-[0_0_30px_rgba(243,163,2,0.3)] transition-all duration-300"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="text-white/90 text-sm font-medium">
+                      Quer saber mais sobre o Heny?
                     </span>
-                    <span className="dark:border-background block h-4 w-0.5 border-l bg-zinc-700 dark:bg-zinc-300"></span>
-
-                    <div className="bg-background/90 group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
-                      <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
-                        <span className="flex size-6">
-                          <ArrowRight className="m-auto size-3" />
-                        </span>
-                        <span className="flex size-6">
-                          <ArrowRight className="m-auto size-3" />
-                        </span>
-                      </div>
+                    <div className="bg-gradient-to-r from-[#F3A302] to-[#FFB84D] p-1.5 rounded-full group-hover:scale-110 transition-transform">
+                      <ArrowRight className="w-4 h-4 text-white" />
                     </div>
-                  </Link>
-                </AnimatedGroup>
-
-                <TextEffect
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  as="h1"
-                  className="mx-auto mt-8 max-w-4xl text-balance text-5xl max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem] text-white drop-shadow-2xl"
-                >
-                  H[ENY]
-                </TextEffect>
-                <TextEffect
-                  per="line"
-                  preset="fade-in-blur"
-                  speedSegment={0.3}
-                  delay={0.5}
-                  as="p"
-                  className="mx-auto mt-8 max-w-2xl text-balance text-lg text-white/95 drop-shadow-lg"
-                >
-                  Gestão elétrica moderna, customizada e simplificada para sua
-                  vida.
-                </TextEffect>
-
-                <AnimatedGroup
-                  variants={{
-                    container: {
-                      visible: {
-                        transition: {
-                          staggerChildren: 0.05,
-                          delayChildren: 0.75,
-                        },
-                      },
-                    },
-                    ...transitionVariants,
-                  }}
-                  className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row"
-                >
-                  <div
-                    key={1}
-                    className="bg-white/10 backdrop-blur-sm rounded-[calc(var(--radius-xl)+0.125rem)] border border-white/20 p-0.5"
-                  >
-                    <Button
-                      asChild
-                      size="lg"
-                      className="rounded-xl px-5 text-base bg-white text-black hover:bg-white/90"
-                    >
-                      <Link href="#link">
-                        <span className="text-nowrap">Ir para Relatórios</span>
-                      </Link>
-                    </Button>
-                  </div>
-                  <Button
-                    key={2}
-                    asChild
-                    size="lg"
-                    variant="ghost"
-                    className="h-10.5 rounded-xl px-5 text-white hover:bg-white/10 backdrop-blur-sm"
-                  >
-                    <Link href="#link">
-                      <span className="text-nowrap">Fazer uma comparação</span>
-                    </Link>
-                  </Button>
-                </AnimatedGroup>
+                  </span>
+                </Link>
               </div>
-            </div>
 
-            {/* Seção adicional opcional - você pode remover se quiser apenas o hero com fundo */}
-            <div className="mt-16 mx-auto max-w-7xl px-6">
-              <AnimatedGroup
-                variants={{
-                  container: {
-                    visible: {
-                      transition: {
-                        staggerChildren: 0.05,
-                        delayChildren: 1.5,
-                      },
-                    },
-                  },
-                  ...transitionVariants,
-                }}
-                className="grid md:grid-cols-3 gap-6"
-              >
-                {/* Cards informativos opcionais com fundo translúcido */}
-                <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-                  <h3 className="text-xl font-semibold text-white mb-2">
+              {/* Título principal */}
+              <h1 className="text-6xl md:text-7xl lg:text-8xl font-extrabold text-white drop-shadow-2xl mb-6 bg-gradient-to-b from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+                H[ENY]
+              </h1>
+
+              {/* Subtítulo */}
+              <p className="mx-auto max-w-2xl text-lg md:text-xl text-white/80 drop-shadow-lg mb-12 leading-relaxed">
+                Gestão elétrica moderna, customizada e simplificada para sua vida
+              </p>
+
+              {/* Botões de ação */}
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-center mb-12">
+                <div className="bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-0.5 hover:border-[#F3A302]/50 transition-all hover:shadow-[0_0_20px_rgba(243,163,2,0.2)]">
+                  <button className="px-8 py-3 bg-gradient-to-r from-[#F3A302] to-[#FFB84D] text-black font-bold rounded-[10px] hover:shadow-lg hover:shadow-[#F3A302]/50 transition-all">
+                    Ir para Relatórios
+                  </button>
+                </div>
+
+                <button className="px-8 py-3 bg-white/10 backdrop-blur-xl border border-white/30 text-white font-bold rounded-xl hover:border-[#51A471]/50 hover:bg-white/15 transition-all duration-300">
+                  Fazer uma comparação
+                </button>
+              </div>
+
+              {/* Cards informativos com glassmorfismo */}
+              <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16">
+                <div className="group bg-white/10 dark:bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:border-[#F3A302]/50 transition-all hover:shadow-[0_0_20px_rgba(243,163,2,0.2)]">
+                  <h3 className="text-xl font-bold text-[#F3A302] mb-2 group-hover:text-[#FFB84D] transition-colors">
                     Economia
                   </h3>
-                  <p className="text-white/80">
-                    Reduza seus custos com energia através de análises
-                    inteligentes
+                  <p className="text-white/70 text-sm">
+                    Reduza seus custos com energia através de análises inteligentes
                   </p>
                 </div>
-                <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-                  <h3 className="text-xl font-semibold text-white mb-2">
+
+                <div className="group bg-white/10 dark:bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:border-[#51A471]/50 transition-all hover:shadow-[0_0_20px_rgba(81,164,113,0.2)]">
+                  <h3 className="text-xl font-bold text-[#51A471] mb-2 group-hover:text-[#79BA92] transition-colors">
                     Sustentabilidade
                   </h3>
-                  <p className="text-white/80">
+                  <p className="text-white/70 text-sm">
                     Contribua para um futuro mais verde com gestão eficiente
                   </p>
                 </div>
-                <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-                  <h3 className="text-xl font-semibold text-white mb-2">
+
+                <div className="group bg-white/10 dark:bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:border-[#79BA92]/50 transition-all hover:shadow-[0_0_20px_rgba(121,186,146,0.2)]">
+                  <h3 className="text-xl font-bold text-[#79BA92] mb-2 group-hover:text-[#A8D5BA] transition-colors">
                     Controle
                   </h3>
-                  <p className="text-white/80">
+                  <p className="text-white/70 text-sm">
                     Monitore e gerencie seu consumo em tempo real
                   </p>
                 </div>
-              </AnimatedGroup>
+              </div>
             </div>
           </div>
         </section>
+
+        {/* Divisor inferior com glassmorfismo */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#51A471]/40 to-transparent" />
+        
+        {/* Gradiente inferior suave */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#F3A302]/5 via-transparent to-transparent pointer-events-none" />
       </main>
+
+      <style>{`
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0; }
+          50% { opacity: 0.6; }
+        }
+        .animate-pulse-glow {
+          animation: pulse-glow 4s ease-in-out infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+      `}</style>
     </>
   );
 }
