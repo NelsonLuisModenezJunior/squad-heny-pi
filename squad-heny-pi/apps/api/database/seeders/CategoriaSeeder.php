@@ -15,18 +15,20 @@ class CategoriaSeeder extends Seeder
     {
         $categorias = [
             ['categoria_nome' => 'Geladeira'],
+            ['categoria_nome' => 'Freezer'],
             ['categoria_nome' => 'Ar Condicionado'],
             ['categoria_nome' => 'TV'],
             ['categoria_nome' => 'Máquina de Lavar'],
-            ['categoria_nome' => 'Forno Elétrico'],
             ['categoria_nome' => 'Secadora de Roupas'],
-            ['categoria_nome' => 'Fogão a Gás'],
             ['categoria_nome' => 'Micro-ondas'],
+            ['categoria_nome' => 'Forno Elétrico'],
+            ['categoria_nome' => 'Ferro de Passar'],
             ['categoria_nome' => 'Aspirador de Pó'],
             ['categoria_nome' => 'Liquidificador'],
-            ['categoria_nome' => 'Ferro de Passar'],
             ['categoria_nome' => 'Cafeteira Elétrica'],
-            ['categoria_nome' => 'Freezer'],
+            ['categoria_nome' => 'Chuveiro Elétrico'],
+            ['categoria_nome' => 'Computador'],
+            ['categoria_nome' => 'Ventilador'],
             ['categoria_nome' => 'Outros'],
         ];
 

@@ -100,7 +100,7 @@ class LocalService {
           errorMessage = errorText || response.statusText;
         }
         
-        throw new Error(`Erro ao criar local: ${errorMessage}`);
+        throw new Error(`${errorMessage}`);
       }
 
       const result = await response.json();
