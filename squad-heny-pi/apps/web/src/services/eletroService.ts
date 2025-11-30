@@ -115,7 +115,7 @@ class EletroService {
           errorMessage = errorText || response.statusText;
         }
 
-        throw new Error(`Erro ao criar eletro: ${errorMessage}`);
+        throw new Error(`${errorMessage}`);
       }
 
       const result = await response.json();

@@ -12,10 +12,10 @@ class EletroObserver
      */
     public function created(Eletro $eletro): void
     {
-        // Carregar relações necessárias
+
         $eletro->load('local.tarifa');
         
-        // Calcular e atualizar valores usando o service
+
         $this->calculateAndSave($eletro);
     }
 
@@ -24,31 +24,39 @@ class EletroObserver
      */
     public function updated(Eletro $eletro): void
     {
-        // Recalcula apenas se potência ou horas de uso mudaram
         if ($eletro->wasChanged(['eletro_potencia', 'eletro_hrs_uso_dia', 'local_id'])) {
             $eletro->load('local.tarifa');
-            $this->calculateAndSave($eletro);
+            $this->calculateAndSave($eletro, true);
         }
     }
 
     /**
      * Calcula e salva todos os valores usando o EficienciaService
+     * @param bool $forceRecalculate Force recalculation of all values
      */
-    private function calculateAndSave(Eletro $eletro): void
+    private function calculateAndSave(Eletro $eletro, bool $forceRecalculate = false): void
     {
         $service = app(EficienciaService::class);
         
-        // Usar os métodos do service para calcular os valores
-        // Os métodos já fazem save() internamente
-        $service->calcularConsumoKwhMes($eletro);
-        $service->calcularConsumoKwhAno($eletro);
-        $service->calcularEmissaoCO2Anual($eletro);
+        $eletro->load('categoria');
         
-        // Calcular custos se a tarifa estiver disponível
+
+        $classificacao = $service->calcularClassificacao($eletro, $forceRecalculate);
+        
+        $consumoMes = $service->calcularConsumoKwhMes($eletro, $forceRecalculate);
+        $consumoAno = $service->calcularConsumoKwhAno($eletro, $forceRecalculate);
+        
+        $emissaoCO2 = $service->calcularEmissaoCO2Anual($eletro, $forceRecalculate);
+        
         if ($eletro->local && $eletro->local->tarifa) {
             $eletro->eletro_custo_mensal = $service->calcularCustoMensal($eletro);
             $eletro->eletro_custo_anual = $service->calcularCustoAnual($eletro);
-            $eletro->saveQuietly(); // salva sem disparar eventos novamente
         }
+        $eletro->classificacao_eficiencia = $classificacao;
+        $eletro->eletro_mensal_kwh = $consumoMes;
+        $eletro->eletro_anual_kwh = $consumoAno;
+        $eletro->eletro_emissao_co2_anual = $emissaoCO2;
+        
+        $eletro->saveQuietly();
     }
 }

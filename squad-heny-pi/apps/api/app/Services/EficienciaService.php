@@ -6,108 +6,186 @@ use App\Models\Eletro;
 
 class EficienciaService
 {
+    // Pesos para cálculo híbrido
+    private const PESO_POTENCIA = 0.6;
+    private const PESO_CONSUMO = 0.4;
+    
+    // Scores por classificação
+    private const SCORES = [
+        'A+' => 100,
+        'A' => 85,
+        'B' => 70,
+        'C' => 55,
+        'D' => 40,
+        'E' => 25
+    ];
+
     /**
-     * Calculate efficiency rating based on appliance type and power consumption
+     * Calcula a classificação de eficiência energética do eletrodoméstico baseado em
+     * potência e horas de uso diárias
+     * @param bool $forceRecalculate Force recalculation even if value exists
      */
-    public function calcularClassificacao(Eletro $eletro): string
+    public function calcularClassificacao(Eletro $eletro, bool $forceRecalculate = false): string
     {
-        // Use stored classification if available
-        if (!empty($eletro->classificacao_eficiencia)) {
+        if (!$forceRecalculate && !empty($eletro->classificacao_eficiencia)) {
             return $eletro->classificacao_eficiencia;
         }
 
         $potencia = $eletro->eletro_potencia;
-        $categoriaNome = $eletro->categoria?->categoria_nome;
+        $horasUso = $eletro->eletro_hrs_uso_dia ?? 0;
+        $categoriaNome = strtolower($eletro->categoria?->categoria_nome ?? '');
         
-        // Get thresholds based on category
-        $thresholds = $this->getThresholdsPorCategoria($categoriaNome);
+        // Pega configuração da categoria
+        $config = $this->getConfigCategoria($categoriaNome);
         
+        // 1. Pontuação da potência 
+        $scorePotencia = $this->calcularScorePotencia($potencia, $config['thresholds']);
+        
+        // 2. Pontuação baseada no consumo
+        $scoreConsumo = $this->calcularScoreConsumo($horasUso, $config['horas_tipicas']);
+        
+        // 3. Pontuação final
+        $scoreFinal = ($scorePotencia * self::PESO_POTENCIA) + ($scoreConsumo * self::PESO_CONSUMO);
+        
+        // Converte pontuação para classificação
+        $classificacao = $this->scoreParaClassificacao($scoreFinal);
+        
+        return $classificacao;
+    }
+    
+    /**
+     * Calcula pontuação baseada na potência (0-100)
+     */
+    private function calcularScorePotencia(float $potencia, array $thresholds): float
+    {
         return match(true) {
-            $potencia <= $thresholds['A+'] => 'A+',
-            $potencia <= $thresholds['A'] => 'A',
-            $potencia <= $thresholds['B'] => 'B',
-            $potencia <= $thresholds['C'] => 'C',
-            $potencia <= $thresholds['D'] => 'D',
+            $potencia <= $thresholds['A+'] => 100,
+            $potencia <= $thresholds['A'] => 85,
+            $potencia <= $thresholds['B'] => 70,
+            $potencia <= $thresholds['C'] => 55,
+            $potencia <= $thresholds['D'] => 40,
+            default => 25
+        };
+    }
+    
+    /**
+     * Calcula a pontuação baseada no consumo comparado com uso típico
+     * Se usa menos que o típico: bonus (até +15 pontos)
+     * Se usa mais que o típico: penalidade (até -15 pontos)
+     */
+    private function calcularScoreConsumo(float $horasUso, float $horasTipicas): float
+    {
+        if ($horasTipicas <= 0) {
+            return 70; // Score neutro se não há referência
+        }
+        
+        $razao = $horasUso / $horasTipicas;
+        
+        // Base score de 70 (equivalente a B)
+        // Ajusta +/- 15 pontos baseado na razão de uso
+        if ($razao <= 0.5) {
+            // Usa metade ou menos do típico: bonus máximo
+            return 85;
+        } elseif ($razao <= 0.75) {
+            // Usa 50-75% do típico: bonus moderado
+            return 77;
+        } elseif ($razao <= 1.0) {
+            // Usa até 100% do típico: score neutro
+            return 70;
+        } elseif ($razao <= 1.5) {
+            // Usa até 150% do típico: penalidade leve
+            return 60;
+        } else {
+            // Usa mais de 150% do típico: penalidade maior
+            return 50;
+        }
+    }
+    
+    /**
+     * Converte score numérico para classificação de letra
+     */
+    private function scoreParaClassificacao(float $score): string
+    {
+        return match(true) {
+            $score >= 85 => 'A+',
+            $score >= 72 => 'A',
+            $score >= 58 => 'B',
+            $score >= 44 => 'C',
+            $score >= 30 => 'D',
             default => 'E'
         };
     }
     
     /**
-     * Get power thresholds per appliance category (in Watts)
+     * Get configuration per appliance category (thresholds in Watts and typical daily hours)
      */
-    private function getThresholdsPorCategoria(?string $categoria): array
+    private function getConfigCategoria(?string $categoria): array
     {
-        return match(strtolower($categoria ?? '')) {
+        return match($categoria) {
             'geladeira', 'refrigerador' => [
-                'A+' => 80,
-                'A' => 120,
-                'B' => 160,
-                'C' => 200,
-                'D' => 250,
+                'thresholds' => ['A+' => 80, 'A' => 120, 'B' => 160, 'C' => 200, 'D' => 250],
+                'horas_tipicas' => 24.0,
+            ],
+            'freezer' => [
+                'thresholds' => ['A+' => 100, 'A' => 150, 'B' => 200, 'C' => 250, 'D' => 300],
+                'horas_tipicas' => 24.0, 
             ],
             'ar condicionado' => [
-                'A+' => 800,
-                'A' => 1000,
-                'B' => 1200,
-                'C' => 1500,
-                'D' => 1800,
+                'thresholds' => ['A+' => 800, 'A' => 1000, 'B' => 1200, 'C' => 1500, 'D' => 1800],
+                'horas_tipicas' => 8.0,
             ],
             'televisão', 'tv' => [
-                'A+' => 50,
-                'A' => 80,
-                'B' => 120,
-                'C' => 150,
-                'D' => 200,
+                'thresholds' => ['A+' => 50, 'A' => 80, 'B' => 120, 'C' => 150, 'D' => 200],
+                'horas_tipicas' => 5.0,
             ],
             'máquina de lavar', 'lavadora' => [
-                'A+' => 300,
-                'A' => 400,
-                'B' => 500,
-                'C' => 650,
-                'D' => 800,
+                'thresholds' => ['A+' => 300, 'A' => 400, 'B' => 500, 'C' => 650, 'D' => 800],
+                'horas_tipicas' => 1.0,
+            ],
+            'secadora de roupas' => [
+                'thresholds' => ['A+' => 1500, 'A' => 2000, 'B' => 2500, 'C' => 3500, 'D' => 4500],
+                'horas_tipicas' => 1.0,
             ],
             'micro-ondas' => [
-                'A+' => 800,
-                'A' => 1000,
-                'B' => 1200,
-                'C' => 1400,
-                'D' => 1600,
+                'thresholds' => ['A+' => 800, 'A' => 1000, 'B' => 1200, 'C' => 1400, 'D' => 1600],
+                'horas_tipicas' => 0.25,
             ],
-            'chuveiro', 'aquecedor' => [
-                'A+' => 3000,
-                'A' => 4000,
-                'B' => 5000,
-                'C' => 6000,
-                'D' => 7000,
-            ],
-            'computador', 'notebook' => [
-                'A+' => 50,
-                'A' => 80,
-                'B' => 120,
-                'C' => 180,
-                'D' => 250,
-            ],
-            'ventilador' => [
-                'A+' => 40,
-                'A' => 60,
-                'B' => 80,
-                'C' => 120,
-                'D' => 160,
+            'forno elétrico' => [
+                'thresholds' => ['A+' => 1000, 'A' => 1500, 'B' => 2000, 'C' => 2500, 'D' => 3000],
+                'horas_tipicas' => 0.5,
             ],
             'ferro de passar' => [
-                'A+' => 800,
-                'A' => 1000,
-                'B' => 1200,
-                'C' => 1500,
-                'D' => 1800,
+                'thresholds' => ['A+' => 800, 'A' => 1000, 'B' => 1200, 'C' => 1500, 'D' => 1800],
+                'horas_tipicas' => 0.5,
             ],
-            // Default thresholds for unknown categories
+            'aspirador de pó' => [
+                'thresholds' => ['A+' => 800, 'A' => 1200, 'B' => 1600, 'C' => 2000, 'D' => 2500],
+                'horas_tipicas' => 0.33,
+            ],
+            'liquidificador' => [
+                'thresholds' => ['A+' => 300, 'A' => 500, 'B' => 700, 'C' => 900, 'D' => 1200],
+                'horas_tipicas' => 0.1,
+            ],
+            'cafeteira elétrica' => [
+                'thresholds' => ['A+' => 600, 'A' => 800, 'B' => 1000, 'C' => 1200, 'D' => 1500],
+                'horas_tipicas' => 0.25,
+            ],
+            'chuveiro elétrico', 'chuveiro', 'aquecedor' => [
+                'thresholds' => ['A+' => 3500, 'A' => 4500, 'B' => 5500, 'C' => 6500, 'D' => 7500],
+                'horas_tipicas' => 0.33,
+            ],
+            'computador', 'notebook' => [
+                'thresholds' => ['A+' => 50, 'A' => 100, 'B' => 200, 'C' => 350, 'D' => 500],
+                'horas_tipicas' => 6.0,
+            ],
+            'ventilador' => [
+                'thresholds' => ['A+' => 40, 'A' => 60, 'B' => 80, 'C' => 120, 'D' => 160],
+                'horas_tipicas' => 8.0,
+            ],
+            // Valor padrão para categorias desconhecidas (Outros)
             default => [
-                'A+' => 100,
-                'A' => 150,
-                'B' => 200,
-                'C' => 300,
-                'D' => 400,
+                'thresholds' => ['A+' => 100, 'A' => 200, 'B' => 400, 'C' => 700, 'D' => 1000],
+                'horas_tipicas' => 2.0,
             ]
         };
     }
@@ -125,36 +203,28 @@ class EficienciaService
     
     /**
      * Calculate monthly energy consumption in kWh
+     * @param bool $forceRecalculate Force recalculation even if value exists
      */
-    public function calcularConsumoKwhMes(Eletro $eletro): float
+    public function calcularConsumoKwhMes(Eletro $eletro, bool $forceRecalculate = false): float
     {
-        // Use stored monthly consumption if available
-        if (!is_null($eletro->eletro_mensal_kwh)) {
+        if (!$forceRecalculate && !is_null($eletro->eletro_mensal_kwh)) {
             return round($eletro->eletro_mensal_kwh, 2);
         }
         
-        $consumo = round($this->calcularConsumoKwhDia($eletro) * 30, 2);
-        $eletro->eletro_mensal_kwh = $consumo;
-        $eletro->save();
-        
-        return $consumo;
+        return round($this->calcularConsumoKwhDia($eletro) * 30, 2);
     }
     
     /**
      * Calculate annual energy consumption in kWh
+     * @param bool $forceRecalculate Force recalculation even if value exists
      */
-    public function calcularConsumoKwhAno(Eletro $eletro): float
+    public function calcularConsumoKwhAno(Eletro $eletro, bool $forceRecalculate = false): float
     {
-        // Use stored annual consumption if available
-        if (!is_null($eletro->eletro_anual_kwh)) {
+        if (!$forceRecalculate && !is_null($eletro->eletro_anual_kwh)) {
             return round($eletro->eletro_anual_kwh, 2);
         }
         
-        $consumo = round($this->calcularConsumoKwhDia($eletro) * 365, 2);
-        $eletro->eletro_anual_kwh = $consumo;
-        $eletro->save();
-        
-        return $consumo;
+        return round($this->calcularConsumoKwhDia($eletro) * 365, 2);
     }
     
     /**
@@ -320,20 +390,19 @@ class EficienciaService
      */
     /**
      * Calculate annual CO2 emissions for a single appliance
+     * @param bool $forceRecalculate Force recalculation even if value exists
      */
-    public function calcularEmissaoCO2Anual(Eletro $eletro): float
+    public function calcularEmissaoCO2Anual(Eletro $eletro, bool $forceRecalculate = false): float
     {
-        if (!is_null($eletro->eletro_emissao_co2_anual)) {
+        if (!$forceRecalculate && !is_null($eletro->eletro_emissao_co2_anual)) {
             return round($eletro->eletro_emissao_co2_anual, 2);
         }
         
         $fatorEmissao = 0.0817; // kg CO2/kWh
         
-        $emissao = round($this->calcularConsumoKwhAno($eletro) * $fatorEmissao, 2);
-        $eletro->eletro_emissao_co2_anual = $emissao;
-        $eletro->save();
+        $consumoAnual = $this->calcularConsumoKwhDia($eletro) * 365;
         
-        return $emissao;
+        return round($consumoAnual * $fatorEmissao, 2);
     }
 
     /**
