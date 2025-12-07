@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CarouselSlide {
   id: number;
@@ -21,31 +21,34 @@ interface ContentCarouseProps {
 const defaultSlides: CarouselSlide[] = [
   {
     id: 1,
-    title: 'Gestão de Energia Inteligente',
-    subtitle: 'Compare. Economize. Cuide do planeta.',
-    description: 'O H[eny] ajuda você a entender e controlar seu consumo de energia de forma personalizada. Análises em tempo real considerando sua localização, tarifas regionais e hábitos de uso.',
-    image: '/carousel/carousel-1.jpg',
+    title: "Gestão de Energia Inteligente",
+    subtitle: "Compare. Economize. Cuide do planeta.",
+    description:
+      "O H[eny] ajuda você a entender e controlar seu consumo de energia de forma personalizada. Análises em tempo real considerando sua localização, tarifas regionais e hábitos de uso.",
+    image: "/carousel/carousel-1.jpg",
   },
   {
     id: 2,
-    title: 'Economia Mensalmente',
-    subtitle: 'Economize pela ecologia',
-    description: 'Identifique oportunidades de economia em suas contas de energia. O H[eny] mostra exatamente quais aparelhos consomem mais e quanto você pode poupar ao trocá-los por alternativas mais eficientes.',
-    image: '/carousel/carousel-2.png',
+    title: "Economia Mensalmente",
+    subtitle: "Economize pela ecologia",
+    description:
+      "Identifique oportunidades de economia em suas contas de energia. O H[eny] mostra exatamente quais aparelhos consomem mais e quanto você pode poupar ao trocá-los por alternativas mais eficientes.",
+    image: "/carousel/carousel-2.png",
   },
   {
     id: 3,
-    title: 'Relatórios Personalizados',
-    subtitle: 'Dados que fazem sentido',
-    description: 'Gere relatórios detalhados com visualizações claras do seu consumo. Histórico mensal, comparações entre aparelhos e projeções futuras - tudo em uma interface intuitiva.',
-    image: '/carousel/carousel-3.jpg',
+    title: "Relatórios Personalizados",
+    subtitle: "Dados que fazem sentido",
+    description:
+      "Gere relatórios detalhados com visualizações claras do seu consumo. Histórico mensal, comparações entre aparelhos e projeções futuras - tudo em uma interface intuitiva.",
+    image: "/carousel/carousel-3.jpg",
   },
 ];
 
 export const ContentCarousel = ({
   slides = defaultSlides,
   autoPlayInterval = 6000,
-  className = '',
+  className = "",
 }: ContentCarouseProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
@@ -59,6 +62,15 @@ export const ContentCarousel = ({
     }, autoPlayInterval);
     return () => clearInterval(timer);
   }, [autoPlay, autoPlayInterval, slides.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") prevSlide();
+      if (e.key === "ArrowRight") nextSlide();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const goToSlide = (index: number) => {
     setDirection(index > currentSlide ? 1 : -1);
@@ -102,13 +114,21 @@ export const ContentCarousel = ({
           <div className="absolute inset-0 flex items-center pl-6 lg:pl-20">
             <motion.div
               initial={{ opacity: 0, x: direction > 0 ? 100 : -100 }}
-              animate={idx === currentSlide ? { opacity: 1, x: 0 } : { opacity: 0, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.8, ease: 'easeOut' }}
+              animate={
+                idx === currentSlide
+                  ? { opacity: 1, x: 0 }
+                  : { opacity: 0, x: 0 }
+              }
+              transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
               className="max-w-2xl space-y-6 z-10"
             >
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
-                animate={idx === currentSlide ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                animate={
+                  idx === currentSlide
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 20 }
+                }
                 transition={{ delay: 0.3, duration: 0.6 }}
                 className="text-[#F3A302] font-bold text-lg uppercase tracking-wider"
               >
@@ -117,7 +137,11 @@ export const ContentCarousel = ({
 
               <motion.h2
                 initial={{ opacity: 0, y: 30 }}
-                animate={idx === currentSlide ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                animate={
+                  idx === currentSlide
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 30 }
+                }
                 transition={{ delay: 0.35, duration: 0.8 }}
                 className="text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white drop-shadow-2xl leading-tight"
               >
@@ -126,7 +150,11 @@ export const ContentCarousel = ({
 
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
-                animate={idx === currentSlide ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                animate={
+                  idx === currentSlide
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 20 }
+                }
                 transition={{ delay: 0.4, duration: 0.6 }}
                 className="text-lg lg:text-xl text-white/90 max-w-xl leading-relaxed drop-shadow-lg"
               >
@@ -135,7 +163,11 @@ export const ContentCarousel = ({
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={idx === currentSlide ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                animate={
+                  idx === currentSlide
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 20 }
+                }
                 transition={{ delay: 0.5, duration: 0.6 }}
               >
                 <button className="group relative px-8 py-4 rounded-xl font-bold overflow-hidden inline-block">
@@ -169,8 +201,8 @@ export const ContentCarousel = ({
                 onClick={() => goToSlide(idx)}
                 className={`h-2 rounded-full transition-all ${
                   idx === currentSlide
-                    ? 'w-8 bg-[#F3A302]'
-                    : 'w-2 bg-white/40 hover:bg-white/60'
+                    ? "w-8 bg-[#F3A302]"
+                    : "w-2 bg-white/40 hover:bg-white/60"
                 }`}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.95 }}
@@ -207,21 +239,6 @@ export const ContentCarousel = ({
           </div>
         </div>
       </div>
-
-      {typeof window !== 'undefined' && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onAnimationComplete={() => {
-            const handleKeyDown = (e: KeyboardEvent) => {
-              if (e.key === 'ArrowLeft') prevSlide();
-              if (e.key === 'ArrowRight') nextSlide();
-            };
-            window.addEventListener('keydown', handleKeyDown);
-            return () => window.removeEventListener('keydown', handleKeyDown);
-          }}
-        />
-      )}
     </div>
   );
 };
