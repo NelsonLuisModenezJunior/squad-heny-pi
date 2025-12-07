@@ -21,23 +21,23 @@ interface ContentCarouseProps {
 const defaultSlides: CarouselSlide[] = [
   {
     id: 1,
-    title: 'Escolhas Inteligentes Começam Aqui!',
+    title: 'Gestão de Energia Inteligente',
     subtitle: 'Compare. Economize. Cuide do planeta.',
-    description: 'O Heny ajuda você a comparar eletrodomésticos considerando consumo de energia, emissão de carbono e tarifas da sua região. Mais do que economia – é consciência.',
+    description: 'O H[eny] ajuda você a entender e controlar seu consumo de energia de forma personalizada. Análises em tempo real considerando sua localização, tarifas regionais e hábitos de uso.',
     image: '/carousel/carousel-1.jpg',
   },
   {
     id: 2,
-    title: 'Sustentabilidade ao Alcance de um Clique',
-    subtitle: 'Eficiência energética nunca foi tão fácil de entender.',
-    description: 'Com o Heny, você não precisa mais adivinhar qual produto é mais econômico. Nossa plataforma mostra, de forma clara e intuitiva, o consumo e o custo energético de cada aparelho.',
+    title: 'Economia Mensalmente',
+    subtitle: 'Economize pela ecologia',
+    description: 'Identifique oportunidades de economia em suas contas de energia. O H[eny] mostra exatamente quais aparelhos consomem mais e quanto você pode poupar ao trocá-los por alternativas mais eficientes.',
     image: '/carousel/carousel-2.png',
   },
   {
     id: 3,
-    title: 'Tecnologia que Transforma Consumo em Consciente',
-    subtitle: 'Escolher bem é o primeiro passo para um futuro melhor.',
-    description: 'O Heny une tecnologia e sustentabilidade para tornar cada compra uma decisão inteligente – para você e para o planeta.',
+    title: 'Relatórios Personalizados',
+    subtitle: 'Dados que fazem sentido',
+    description: 'Gere relatórios detalhados com visualizações claras do seu consumo. Histórico mensal, comparações entre aparelhos e projeções futuras - tudo em uma interface intuitiva.',
     image: '/carousel/carousel-3.jpg',
   },
 ];

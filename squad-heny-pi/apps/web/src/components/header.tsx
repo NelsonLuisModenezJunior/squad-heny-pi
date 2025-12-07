@@ -69,6 +69,7 @@ export const HeroHeader = () => {
                 href="/"
                 aria-label="home"
                 className="flex items-center space-x-2"
+                style={{ textShadow: "0 0 6px rgba(0,0,0,0.25)" }}
               >
                 <Logo />
               </Link>
@@ -90,6 +91,7 @@ export const HeroHeader = () => {
                     <Link
                       href={item.href}
                       className="text-sm text-foreground/80 hover:text-foreground"
+                      style={{ textShadow: "0 0 6px rgba(0,0,0,0.25)" }}
                     >
                       {item.name}
                     </Link>
@@ -118,6 +120,7 @@ export const HeroHeader = () => {
                         href={item.href}
                         onClick={() => setMenuState(false)}
                         className="block px-3 py-2 rounded-md"
+                        style={{ textShadow: "0 0 6px rgba(0,0,0,0.25)" }}
                       >
                         {item.name}
                       </Link>
