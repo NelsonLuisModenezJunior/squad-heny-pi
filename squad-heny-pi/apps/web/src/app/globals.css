@@ -194,4 +194,7 @@
       );
     }
   }
+  nextjs-portal {
+    display: none !important;
+  }
 }

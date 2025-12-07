@@ -589,7 +589,10 @@ const RelatorioEnergia = () => {
 
     try {
       if (editingLocation.tarifa_id && editingLocation.tariff_value > 0) {
-        await tarifaService.update(editingLocation.tarifa_id, editingLocation.tariff_value);
+        await tarifaService.update(
+          editingLocation.tarifa_id,
+          editingLocation.tariff_value
+        );
       }
 
       await localService.update(parseInt(editingLocation.id), {
@@ -911,7 +914,7 @@ const RelatorioEnergia = () => {
       },
       {
         name: "Moderados (B/C)",
-            value: filteredAppliances.filter((a) =>
+        value: filteredAppliances.filter((a) =>
           ["B", "C"].includes(a.efficiency)
         ).length,
         color: "#f59e0b",
@@ -964,22 +967,26 @@ const RelatorioEnergia = () => {
     // Verificar se já é eficiente
     const isAlreadyAPlus = appliance.efficiency === "A+";
     const isAlreadyA = appliance.efficiency === "A";
-    
+
     if (isAlreadyAPlus) {
       setSimResult({
-        currentKwh: (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
-        newKwh: (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
+        currentKwh:
+          (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
+        newKwh:
+          (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
         savingsKwh: 0,
         monthlySavings: 0,
         annualSavings: 0,
       });
       return;
     }
-    
+
     if (isAlreadyA && simReplacement === "A") {
       setSimResult({
-        currentKwh: (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
-        newKwh: (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
+        currentKwh:
+          (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
+        newKwh:
+          (appliance.power * (simHours || appliance.hoursPerDay) * 30) / 1000,
         savingsKwh: 0,
         monthlySavings: 0,
         annualSavings: 0,
@@ -994,8 +1001,9 @@ const RelatorioEnergia = () => {
     if (isAlreadyA && simReplacement === "A+") {
       factor = 0.15;
     } else {
-      factor = simReplacement === "A+" ? 0.3 : simReplacement === "A" ? 0.15 : 0;
-    } 
+      factor =
+        simReplacement === "A+" ? 0.3 : simReplacement === "A" ? 0.15 : 0;
+    }
     const newKwh = currentKwh * (1 - factor);
     const savingsKwh = currentKwh - newKwh;
     const monthlySavings = savingsKwh * simTariff;
@@ -2171,9 +2179,7 @@ const RelatorioEnergia = () => {
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                     >
                       <option value="A+">A+ (estimativa ~30% economia)</option>
-                      <option value="A">
-                        A (estimativa ~15% economia)
-                      </option>
+                      <option value="A">A (estimativa ~15% economia)</option>
                     </select>
                   </div>
                 </div>
@@ -2197,51 +2203,65 @@ const RelatorioEnergia = () => {
                   simResult.savingsKwh === 0 ? (
                     <div className="mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center">
                       <div className="text-emerald-600 mb-2">
-                        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="w-12 h-12 mx-auto"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </div>
                       <p className="text-lg font-semibold text-emerald-700">
                         Este eletrodoméstico já é eficiente.
                       </p>
                       <p className="text-sm text-emerald-600 mt-1">
-                        Não há necessidade de substituição - o eletrodoméstico já possui uma classificação igual ou melhor.
+                        Não há necessidade de substituição - o eletrodoméstico
+                        já possui uma classificação igual ou melhor.
                       </p>
                       <p className="text-sm text-slate-500 mt-3">
-                        Consumo atual: <strong>{simResult.currentKwh.toFixed(2)} kWh/mês</strong>
+                        Consumo atual:{" "}
+                        <strong>
+                          {simResult.currentKwh.toFixed(2)} kWh/mês
+                        </strong>
                       </p>
                     </div>
                   ) : (
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 rounded-lg p-4">
-                      <p className="text-sm text-slate-600">Consumo atual</p>
-                      <p className="text-2xl font-bold text-slate-800">
-                        {simResult.currentKwh.toFixed(2)} kWh/mês
-                      </p>
-                    </div>
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-slate-50 rounded-lg p-4">
+                        <p className="text-sm text-slate-600">Consumo atual</p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {simResult.currentKwh.toFixed(2)} kWh/mês
+                        </p>
+                      </div>
 
-                    <div className="bg-slate-50 rounded-lg p-4">
-                      <p className="text-sm text-slate-600">
-                        Após substituição
-                      </p>
-                      <p className="text-2xl font-bold text-slate-800">
-                        {simResult.newKwh.toFixed(2)} kWh/mês
-                      </p>
-                    </div>
+                      <div className="bg-slate-50 rounded-lg p-4">
+                        <p className="text-sm text-slate-600">
+                          Após substituição
+                        </p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {simResult.newKwh.toFixed(2)} kWh/mês
+                        </p>
+                      </div>
 
-                    <div className="bg-slate-50 rounded-lg p-4">
-                      <p className="text-sm text-slate-600">
-                        Economia estimada
-                      </p>
-                      <p className="text-2xl font-bold text-emerald-600">
-                        {simResult.savingsKwh.toFixed(2)} kWh/mês
-                      </p>
-                      <p className="text-sm text-slate-600 mt-1">
-                        R$ {simResult.monthlySavings.toFixed(2)}/mês — R${" "}
-                        {simResult.annualSavings.toFixed(2)}/ano
-                      </p>
+                      <div className="bg-slate-50 rounded-lg p-4">
+                        <p className="text-sm text-slate-600">
+                          Economia estimada
+                        </p>
+                        <p className="text-2xl font-bold text-emerald-600">
+                          {simResult.savingsKwh.toFixed(2)} kWh/mês
+                        </p>
+                        <p className="text-sm text-slate-600 mt-1">
+                          R$ {simResult.monthlySavings.toFixed(2)}/mês — R${" "}
+                          {simResult.annualSavings.toFixed(2)}/ano
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   )
                 ) : (
                   <p className="text-slate-500 mt-4">
@@ -2407,9 +2427,25 @@ const RelatorioEnergia = () => {
                   >
                     {isCreatingAppliance ? (
                       <>
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin h-5 w-5"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         Criando...
                       </>
@@ -2582,9 +2618,25 @@ const RelatorioEnergia = () => {
                   >
                     {isUpdatingAppliance ? (
                       <>
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin h-5 w-5"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         Salvando...
                       </>
@@ -2713,7 +2765,7 @@ const RelatorioEnergia = () => {
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
                               ["A", "A+", "A++"].includes(appliance.efficiency)
                                 ? "bg-green-100 text-green-700"
-                                : appliance.efficiency === "B"
+                                : ["B", "C"].includes(appliance.efficiency)
                                 ? "bg-yellow-100 text-yellow-700"
                                 : "bg-red-100 text-red-700"
                             }`}
@@ -2806,7 +2858,7 @@ const RelatorioEnergia = () => {
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 ["A", "A+"].includes(a.efficiency)
                                   ? "bg-green-100 text-green-700"
-                                  : a.efficiency === "B"
+                                  : ["B", "C"].includes(a.efficiency)
                                   ? "bg-yellow-100 text-yellow-700"
                                   : "bg-red-100 text-red-700"
                               }`}

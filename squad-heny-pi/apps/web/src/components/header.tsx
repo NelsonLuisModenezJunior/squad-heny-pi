@@ -16,12 +16,13 @@ const menuItems = [
 export const HeroHeader = () => {
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
-
-  // autenticação simples baseada no token salvo pela sua tela de login (localStorage)
-  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(
+    null
+  );
+  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
+    setIsClient(true);
     const check = () => setIsAuthenticated(!!localStorage.getItem("token"));
     check();
 
@@ -99,17 +100,19 @@ export const HeroHeader = () => {
             </div>
 
             {/* botão Entrar / Logout */}
-            <div className="hidden lg:flex lg:items-center">
-              <button
-                onClick={handleAuthClick}
-                className="rounded-md bg-gradient-to-r from-[#79BA92] to-[#51A471] px-4 py-2 text-sm font-medium text-white shadow-lg hover:scale-105 transition"
-              >
-                {isAuthenticated ? "Logout" : "Entrar"}
-              </button>
-            </div>
+            {isClient && (
+              <div className="hidden lg:flex lg:items-center">
+                <button
+                  onClick={handleAuthClick}
+                  className="rounded-md bg-gradient-to-r from-[#79BA92] to-[#51A471] px-4 py-2 text-sm font-medium text-white shadow-lg hover:scale-105 transition"
+                >
+                  {isAuthenticated ? "Logout" : "Entrar"}
+                </button>
+              </div>
+            )}
 
             {/* mobile menu panel */}
-            {menuState && (
+            {isClient && menuState && (
               <div className="lg:hidden absolute inset-x-2 top-full mt-2 rounded-xl bg-background/60 p-4 backdrop-blur-md shadow-lg">
                 <ul className="flex flex-col gap-3">
                   {menuItems.map((item) => (
